@@ -915,7 +915,7 @@ function verReclamo(id) {
           '<span class="ir-lbl" style="color:var(--blue)">Visita estimada</span>' +
           '<div style="display:flex;align-items:center;gap:8px">' +
             '<span class="ir-val" style="color:var(--blue)" id="fv-val-' + r.id + '">' + (r.fechaVisita ? formatFecha(r.fechaVisita) : 'Sin fecha') + '</span>' +
-            '<button onclick="editarFechaVisita(\'' + r.id + '\')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--blue);background:var(--blue-l);color:var(--blue);cursor:pointer;font-family:var(--font)">' + (r.fechaVisita ? 'Editar' : 'Asignar') + '</button>' +
+            '<button onclick="editarFechaVisita(curReclamo)" style="font-size:11px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--blue);background:var(--blue-l);color:var(--blue);cursor:pointer;font-family:var(--font)">' + (r.fechaVisita ? 'Editar' : 'Asignar') + '</button>' +
           '</div>' +
         '</div>' +
         '<div class="ir"><span class="ir-lbl">N\u00famero</span><span class="ir-val">' + r.num + '</span></div>' +
@@ -923,18 +923,16 @@ function verReclamo(id) {
       '<div class="slbl">Historial del reclamo</div>' +
       '<div class="card" style="padding:14px 14px 8px">' +
         '<div class="tl" id="tl-' + r.id + '">' + renderTimeline(r.historial) + '</div>' +
-        '<div class="notebar">' +
+        '<div style="display:flex;align-items:center;gap:8px;background:var(--g0);border:0.5px solid var(--g200);border-radius:12px;padding:10px 12px;margin-top:8px">' +
         av(28, 'av-blue', 'AF') +
-        '<input id="ni-' + r.id + '" placeholder="Agregar nota o diagn\u00f3stico previo...">' +
-        '<button class="notebar-btn" onclick="addNota(' + JSON.stringify(r.id) + ')">' +
-        '<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+        '<input id="nota-input" placeholder="Agregar nota o diagn\u00f3stico..." style="flex:1;min-width:0;border:none;outline:none;font-size:14px;color:var(--g900);font-family:var(--font);background:transparent">' +
+        '<button onclick="addNotaActual()" style="width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
         '</button></div>' +
       '</div>' +
-      '<button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(' + JSON.stringify(r.id) + ')">' +
-      '+ Registrar visita t\u00e9cnica</button>' +
+      '<button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(curReclamo)">+ Registrar visita t\u00e9cnica</button>' +
       (r.estado !== 'resuelto' ?
-        '<button class="btn-grn" onclick="marcarResuelto(' + JSON.stringify(r.id) + ')">' +
-        'Marcar como resuelto</button>' :
+        '<button class="btn-grn" onclick="marcarResuelto(curReclamo)">Marcar como resuelto</button>' :
         '<div style="background:var(--green-l);border:.5px solid var(--green);border-radius:12px;padding:12px 14px;text-align:center">' +
         '<span style="color:var(--green);font-size:17px;font-weight:500">Reclamo resuelto</span></div>') +
     '</div>';
@@ -998,24 +996,23 @@ function renderTimeline(hist) {
 }
 
 function addNota(rId) {
-  var inp = document.getElementById('ni-' + rId);
+  var inp = document.getElementById('nota-input');
+  if (!inp) inp = document.getElementById('ni-' + rId);
   if (!inp) { toast('Campo no encontrado'); return; }
   var txt = inp.value.trim();
   if (!txt) { toast('Escrib\u00ed algo antes de guardar'); return; }
   var r = R(rId);
   if (!r) { toast('Reclamo no encontrado'); return; }
   var uActual = DB.usuarios.find(function(u){ return u.recibe; });
-  r.historial.push({
-    tipo: 'msg',
-    usuarioId: uActual ? uActual.id : 'u1',
-    fecha: 'hoy',
-    hora: now(),
-    texto: txt
-  });
+  r.historial.push({tipo:'msg', usuarioId: uActual ? uActual.id : 'u1', fecha:'hoy', hora:now(), texto:txt});
   inp.value = '';
   var tl = document.getElementById('tl-' + rId);
   if (tl) tl.innerHTML = renderTimeline(r.historial);
   toast('Nota guardada');
+}
+
+function addNotaActual() {
+  if (curReclamo) addNota(curReclamo);
 }
 
 function marcarResuelto(rId) {
