@@ -923,13 +923,20 @@ function verReclamo(id) {
       '<div class="slbl">Historial del reclamo</div>' +
       '<div class="card" style="padding:14px 14px 8px">' +
         '<div class="tl" id="tl-' + r.id + '">' + renderTimeline(r.historial) + '</div>' +
-        '<div class="notebar">' + av(28, 'av-blue', 'MR') + '<input id="ni-' + r.id + '" placeholder="Agregar nota o acci\u00f3n...">' +
-        '<button class="notebar-btn" onclick="addNota(\'' + r.id + '\')"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>' +
+        '<div class="notebar">' +
+        av(28, 'av-blue', 'AF') +
+        '<input id="ni-' + r.id + '" placeholder="Agregar nota o diagn\u00f3stico previo...">' +
+        '<button class="notebar-btn" onclick="addNota(' + JSON.stringify(r.id) + ')">' +
+        '<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+        '</button></div>' +
       '</div>' +
+      '<button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(' + JSON.stringify(r.id) + ')">' +
+      '+ Registrar visita t\u00e9cnica</button>' +
       (r.estado !== 'resuelto' ?
-        '<button class="btn-grn" style="margin-top:14px" onclick="marcarResuelto(\'' + r.id + '\')">Marcar como resuelto</button>' :
-        '<div style="background:var(--green-l);border:.5px solid var(--green);border-radius:12px;padding:12px 14px;margin-top:14px;text-align:center"><span style="color:var(--green);font-size:22px;font-weight:500">Reclamo resuelto</span></div>') +
-      '<button class="btn-sec" onclick="showNuevaVisita(\'' + r.id + '\')">+ Registrar visita t\u00e9cnica</button>' +
+        '<button class="btn-grn" onclick="marcarResuelto(' + JSON.stringify(r.id) + ')">' +
+        'Marcar como resuelto</button>' :
+        '<div style="background:var(--green-l);border:.5px solid var(--green);border-radius:12px;padding:12px 14px;text-align:center">' +
+        '<span style="color:var(--green);font-size:17px;font-weight:500">Reclamo resuelto</span></div>') +
     '</div>';
 }
 
@@ -992,18 +999,22 @@ function renderTimeline(hist) {
 
 function addNota(rId) {
   var inp = document.getElementById('ni-' + rId);
-  if (!inp) { toast('Error: campo no encontrado'); return; }
+  if (!inp) { toast('Campo no encontrado'); return; }
   var txt = inp.value.trim();
   if (!txt) { toast('Escrib\u00ed algo antes de guardar'); return; }
   var r = R(rId);
   if (!r) { toast('Reclamo no encontrado'); return; }
-  r.historial.push({tipo:'msg', usuarioId:'u1', fecha:'hoy', hora:now(), texto:txt});
+  var uActual = DB.usuarios.find(function(u){ return u.recibe; });
+  r.historial.push({
+    tipo: 'msg',
+    usuarioId: uActual ? uActual.id : 'u1',
+    fecha: 'hoy',
+    hora: now(),
+    texto: txt
+  });
   inp.value = '';
   var tl = document.getElementById('tl-' + rId);
-  if (tl) {
-    tl.innerHTML = renderTimeline(r.historial);
-    tl.lastElementChild && tl.lastElementChild.scrollIntoView({behavior:'smooth', block:'end'});
-  }
+  if (tl) tl.innerHTML = renderTimeline(r.historial);
   toast('Nota guardada');
 }
 
