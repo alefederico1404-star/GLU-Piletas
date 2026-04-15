@@ -366,6 +366,51 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <script>
 
+
+// ── USUARIO ACTIVO ──
+let currentUser = null;
+
+function getCurrentUser() {
+  return currentUser || DB.usuarios[0];
+}
+
+function showLogin() {
+  const c = document.getElementById('content');
+  document.getElementById('topbar').innerHTML =
+    `<img class="tb-logo" src="${LOGO_SRC}">
+    <div style="flex:1"><div class="tb-title">GLU PILETAS</div><div class="tb-sub">Post-venta piletas</div></div>`;
+  document.getElementById('bnav').style.display = 'none';
+  c.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px 20px">
+      <img src="${LOGO_SRC}" style="width:100px;height:100px;border-radius:20px;object-fit:cover;margin-bottom:24px">
+      <div style="font-family:var(--disp);font-size:24px;color:var(--g900);margin-bottom:6px;text-align:center">GLU PILETAS</div>
+      <div style="font-size:14px;color:var(--g400);margin-bottom:36px;text-align:center">¿Quién sos?</div>
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px">
+        ${DB.usuarios.filter(u => u.recibe || u.resuelve).map(u => `
+          <button onclick="loginAs('${u.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--g0);border:0.5px solid var(--g200);border-radius:14px;cursor:pointer;font-family:var(--font);text-align:left;width:100%">
+            <div class="av ${u.avClass}" style="width:44px;height:44px;font-size:16px;flex-shrink:0">${u.iniciales}</div>
+            <div>
+              <div style="font-size:16px;font-weight:500;color:var(--g900)">${u.nombre}</div>
+              <div style="font-size:13px;color:var(--g400);margin-top:2px">${u.rol}</div>
+            </div>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function loginAs(userId) {
+  currentUser = DB.usuarios.find(u => u.id === userId);
+  if (!currentUser) return;
+  document.getElementById('bnav').style.display = '';
+  toast('Hola, ' + currentUser.nombre.split(' ')[0] + '!');
+  go('dashboard');
+}
+
+function logout() {
+  currentUser = null;
+  showLogin();
+}
+
 // ── SUPABASE ──
 const SUPA_URL = 'https://avouqkckcvvslwvjmvcy.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2b3Vxa2NrY3Z2c2x3dmptdmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMjM4MzMsImV4cCI6MjA5MTc5OTgzM30.KHkgDwAPOfIv589SLT8KeqWJ_EFt40GcMiv6XEsrQAw';
@@ -468,7 +513,7 @@ async function loadDB() {
     DB.piletas  = (pRows||[]).map(piletaFromDB);
     DB.reclamos = (rRows||[]).map(reclamoFromDB);
     DB.visitas  = (vRows||[]).map(visitaFromDB);
-    go('dashboard');
+    showLogin();
   } catch(e) {
     showLoading(false);
     document.getElementById('content').innerHTML =
@@ -1156,7 +1201,7 @@ function verReclamo(id) {
       <div class="card" style="padding:14px 14px 10px">
         <div class="tl" id="tl-box">${renderTimeline(r.historial)}</div>
         <div class="notebar">
-          ${av(30,'av-blue','AF')}
+          ${av(30, getCurrentUser() ? getCurrentUser().avClass : 'av-blue', getCurrentUser() ? getCurrentUser().iniciales : '??')}
           <input id="nota-input" placeholder="Agregar nota o diagn\u00f3stico...">
           <button class="notebar-btn" onclick="addNotaActual()">
             <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1228,7 +1273,7 @@ function addNota(rId) {
   if (!txt) { toast('Escrib\u00ed algo antes de guardar'); return; }
   const r = R(rId);
   if (!r) return;
-  const uActual = DB.usuarios.find(u => u.recibe);
+  const uActual = getCurrentUser();
   r.historial.push({tipo:'msg', usuarioId: uActual ? uActual.id : 'u1', fecha:'hoy', hora:now(), texto:txt});
   inp.value = '';
   supaPatch('reclamos', {historial: r.historial}, {'id':'eq.'+rId})
@@ -1559,6 +1604,7 @@ function renderVisitasList(list) {
 }
 
 // ── INIT ──
+document.getElementById('bnav').style.display = 'none';
 loadDB();
 
 </script>
