@@ -271,61 +271,13 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 <script id="db" type="application/json">
 {
   "usuarios": [
-  {
-    "id": "u1",
-    "nombre": "Alejandro Federico",
-    "iniciales": "AF",
-    "rol": "Dueño",
-    "avClass": "av-blue",
-    "recibe": true,
-    "resuelve": true
-  },
-  {
-    "id": "u2",
-    "nombre": "Martín Federico",
-    "iniciales": "MF",
-    "rol": "Dueño",
-    "avClass": "av-teal",
-    "recibe": true,
-    "resuelve": true
-  },
-  {
-    "id": "u3",
-    "nombre": "Marcelo Correa",
-    "iniciales": "MC",
-    "rol": "Instalador de equipos",
-    "avClass": "av-amber",
-    "recibe": false,
-    "resuelve": true
-  },
-  {
-    "id": "u4",
-    "nombre": "Capataz de obra",
-    "iniciales": "CA",
-    "rol": "Capataz",
-    "avClass": "av-purple",
-    "recibe": false,
-    "resuelve": true
-  },
-  {
-    "id": "u5",
-    "nombre": "Servicio técnico externo",
-    "iniciales": "ST",
-    "rol": "Externo",
-    "avClass": "av-gray",
-    "recibe": false,
-    "resuelve": true
-  },
-  {
-    "id": "u6",
-    "nombre": "Otro",
-    "iniciales": "OT",
-    "rol": "Otro",
-    "avClass": "av-gray",
-    "recibe": false,
-    "resuelve": true
-  }
-],
+    {"id":"u1","nombre":"Alejandro Federico","iniciales":"AF","rol":"Due\u00f1o","avClass":"av-blue","recibe":true,"resuelve":true,"usuario":true},
+    {"id":"u2","nombre":"Mart\u00edn Federico","iniciales":"MF","rol":"Due\u00f1o","avClass":"av-teal","recibe":true,"resuelve":true,"usuario":true},
+    {"id":"u3","nombre":"Marcelo Correa","iniciales":"MC","rol":"Instalador de equipos","avClass":"av-amber","recibe":false,"resuelve":true,"usuario":true},
+    {"id":"u4","nombre":"Capataz de obra","iniciales":"CA","rol":"Capataz","avClass":"av-purple","recibe":false,"resuelve":true,"usuario":false},
+    {"id":"u5","nombre":"Servicio t\u00e9cnico externo","iniciales":"ST","rol":"Externo","avClass":"av-gray","recibe":false,"resuelve":true,"usuario":false},
+    {"id":"u6","nombre":"Otro","iniciales":"OT","rol":"Otro","avClass":"av-gray","recibe":false,"resuelve":true,"usuario":false}
+  ],
   "piletas": [],
   "reclamos": [],
   "visitas": []
@@ -340,7 +292,7 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
       <div style="font-size:14px;color:var(--g400)">Conectando...</div>
     </div>
   </div>
-  <nav class="bnav">
+  <nav class="bnav" id="bnav">
     <button class="bn" id="nb-dashboard" onclick="go('dashboard')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Inicio
@@ -386,7 +338,7 @@ function showLogin() {
       <div style="font-family:var(--disp);font-size:24px;color:var(--g900);margin-bottom:6px;text-align:center">GLU PILETAS</div>
       <div style="font-size:14px;color:var(--g400);margin-bottom:36px;text-align:center">¿Quién sos?</div>
       <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px">
-        ${DB.usuarios.filter(u => u.recibe || u.resuelve).map(u => `
+        ${DB.usuarios.filter(u => u.usuario).map(u => `
           <button onclick="loginAs('${u.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--g0);border:0.5px solid var(--g200);border-radius:14px;cursor:pointer;font-family:var(--font);text-align:left;width:100%">
             <div class="av ${u.avClass}" style="width:44px;height:44px;font-size:16px;flex-shrink:0">${u.iniciales}</div>
             <div>
