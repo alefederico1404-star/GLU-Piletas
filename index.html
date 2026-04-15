@@ -613,6 +613,24 @@ function guardarEdicionPileta(pId) {
   toast('Pileta actualizada');
 }
 
+
+function verFoto(pId, fi) {
+  var p = P(pId);
+  if (!p || !p.fotos) return;
+  var f = p.fotos[parseInt(fi)];
+  if (!f) return;
+  if (f.tipo === 'imagen') {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = '<img src="' + f.src + '" style="max-width:100%;max-height:80vh;border-radius:10px;object-fit:contain">' +
+      '<div style="color:rgba(255,255,255,.7);font-size:13px;margin-top:12px">' + f.nombre + '</div>' +
+      '<button onclick="this.parentElement.remove()" style="margin-top:16px;padding:10px 24px;background:white;border:none;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font)">Cerrar</button>';
+    document.body.appendChild(overlay);
+  } else {
+    toast('Los documentos se abren desde la computadora');
+  }
+}
+
 function showNuevaPileta() {
   tbSimple('GLU PILETAS', 'Nueva pileta', false);
   document.querySelectorAll('.bn').forEach(function(b){b.classList.remove('on');});
@@ -914,7 +932,7 @@ function verPileta(id) {
         (p.tipos && p.tipos.length ? '<div class="ir" style="align-items:flex-start"><span class="ir-lbl">Tipo</span><div style="text-align:right;font-size:13px;color:var(--g900);font-weight:500;line-height:1.6">' + p.tipos.join('<br>') + '</div></div>' : '') +
         (p.equipos && p.equipos.length ? '<div class="ir" style="align-items:flex-start"><span class="ir-lbl">Equipos</span><div style="text-align:right;font-size:13px;color:var(--g900);font-weight:500;line-height:1.6">' + p.equipos.join('<br>') + '</div></div>' : '') +
       '</div>' +
-      (p.fotos && p.fotos.length ? '<div class="slbl" style="margin-top:8px">Fotos y documentos (' + p.fotos.length + ')</div>' + '<div class="card" style="padding:10px;display:flex;flex-wrap:wrap;gap:8px">' + p.fotos.map(function(f){ return f.tipo === 'imagen' ? '<img src="' + f.src + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px">' : '<div style="width:72px;height:72px;background:var(--g50);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:0.5px solid var(--g200)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:9px;color:var(--g600);padding:2px 4px;text-align:center">' + f.nombre.substring(0,10) + '</div></div>'; }).join('') + '</div>' : '') +
+      (p.fotos && p.fotos.length ? '<div class="slbl" style="margin-top:8px">Fotos y documentos (' + p.fotos.length + ')</div>' + '<div class="card" style="padding:10px;display:flex;flex-wrap:wrap;gap:8px">' + p.fotos.map(function(f,fi){ return f.tipo === 'imagen' ? '<img src="' + f.src + '" data-fi="' + fi + '" data-pid="' + p.id + '" onclick="verFoto(this.dataset.pid,this.dataset.fi)" style="width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer">' : '<div data-fi="' + fi + '" data-pid="' + p.id + '" onclick="verFoto(this.dataset.pid,this.dataset.fi)" style="width:72px;height:72px;background:var(--g50);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:0.5px solid var(--g200);cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:11px;color:var(--g600);padding:2px 4px;text-align:center">' + f.nombre.substring(0,12) + '</div></div>'; }).join('') + '</div>' : '') +
     '<div class="slbl">Reclamos (' + recs.length + ')</div>' +
       '<div class="card">' +
         (recs.length === 0 ? '<div class="empty">Sin reclamos registrados</div>' :
@@ -927,9 +945,9 @@ function verPileta(id) {
           ).join('')) +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0">' +
-      '<button class="btn-sec" style="margin:0" onclick="showEditarPileta(\'" + id + "\')">✏️ Editar pileta</button>' +
-      '<button class="btn-prim" style="margin:0" onclick="showNuevoReclamo(\'" + id + "\')">' +
-      '+ Nuevo reclamo</button></div>' +
+      '<button class="btn-sec" style="margin:0" onclick="curPileta=\'" + id + "\';showEditarPileta(curPileta)">Editar pileta</button>' +
+      '<button class="btn-prim" style="margin:0" onclick="showNuevoReclamo(curPileta)">+ Nuevo reclamo</button>' +
+      '</div>' +
     '</div>';
 }
 
@@ -950,7 +968,7 @@ function renderReclamosContent(c) {
   const prog = DB.reclamos.filter(r => r.estado === 'progreso').length;
   const res = DB.reclamos.filter(r => r.estado === 'resuelto').length;
 
-  c.innerHTML = '<div style="padding:12px 10px">' +
+  c.innerHTML = '<div style="padding:10px 8px">' +
     '<div class="chips">' +
       '<div class="chip"><div class="chip-val" style="color:var(--amber)">' + pend + '</div><div class="chip-lbl">Pendientes</div></div>' +
       '<div class="chip"><div class="chip-val" style="color:var(--blue)">' + prog + '</div><div class="chip-lbl">En progreso</div></div>' +
@@ -1028,11 +1046,11 @@ function verReclamo(id) {
       '<div class="slbl">Historial del reclamo</div>' +
       '<div class="card" style="padding:14px 14px 8px">' +
         '<div class="tl" id="tl-' + r.id + '">' + renderTimeline(r.historial) + '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px;background:var(--g0);border:0.5px solid var(--g200);border-radius:12px;padding:10px 12px;margin-top:8px">' +
-        av(28, 'av-blue', 'AF') +
-        '<input id="nota-input" placeholder="Agregar nota o diagn\u00f3stico..." style="flex:1;min-width:0;border:none;outline:none;font-size:14px;color:var(--g900);font-family:var(--font);background:transparent">' +
-        '<button onclick="addNotaActual()" style="width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0">' +
-        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+        '<div style="display:flex;align-items:center;gap:8px;background:var(--g0);border:0.5px solid var(--g200);border-radius:12px;padding:10px 10px;margin-top:8px;overflow:hidden">' +
+        av(30, 'av-blue', 'AF') +
+        '<input id="nota-input" placeholder="Agregar nota..." style="flex:1;min-width:0;width:0;border:none;outline:none;font-size:16px;color:var(--g900);font-family:var(--font);background:transparent">' +
+        '<button onclick="addNotaActual()" style="width:36px;height:36px;min-width:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
         '</button></div>' +
       '</div>' +
       '<button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(curReclamo)">+ Registrar visita t\u00e9cnica</button>' +
@@ -1365,7 +1383,7 @@ function renderVisitasList(list) {
       '<div class="vitem-body">' +
         '<div class="vitem-title">' + v.titulo + '</div>' +
         '<div class="vitem-sub">' + v.sub + '</div>' +
-        '<div class="vitem-who">' + (u ? av(20, u.avClass, u.iniciales) : '') +
+        '<div class="vitem-who">' + (u ? av(22, u.avClass, u.iniciales) + '<span style="font-size:14px;color:var(--g800);font-weight:500;margin-right:6px">' + u.nombre.split(' ')[0] + '</span>' : '') +
         '<span style="font-size:13px;color:var(--g400)">' + fechaLabel + (v.hora ? ' &bull; ' + v.hora : '') + '</span></div>' +
       '</div>' +
       (rRel ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g400)" stroke-width="2" style="flex-shrink:0;margin-top:4px"><polyline points="9 18 15 12 9 6"/></svg>' : '') +
