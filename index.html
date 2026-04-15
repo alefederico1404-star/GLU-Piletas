@@ -271,13 +271,61 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 <script id="db" type="application/json">
 {
   "usuarios": [
-    {"id":"u1","nombre":"Alejandro Federico","iniciales":"AF","rol":"Due\u00f1o","avClass":"av-blue","recibe":true,"resuelve":true},
-    {"id":"u2","nombre":"Mart\u00edn Federico","iniciales":"MF","rol":"Due\u00f1o","avClass":"av-teal","recibe":true,"resuelve":true},
-    {"id":"u3","nombre":"Marcelo Correa","iniciales":"MC","rol":"Instalador de equipos","avClass":"av-amber","recibe":false,"resuelve":true},
-    {"id":"u4","nombre":"Capataz de obra","iniciales":"CA","rol":"Capataz","avClass":"av-purple","recibe":false,"resuelve":true},
-    {"id":"u5","nombre":"Servicio t\u00e9cnico externo","iniciales":"ST","rol":"Externo","avClass":"av-gray","recibe":false,"resuelve":true},
-    {"id":"u6","nombre":"Otro","iniciales":"OT","rol":"Otro","avClass":"av-gray","recibe":false,"resuelve":true}
-  ],
+  {
+    "id": "u1",
+    "nombre": "Alejandro Federico",
+    "iniciales": "AF",
+    "rol": "Dueño",
+    "avClass": "av-blue",
+    "recibe": true,
+    "resuelve": true
+  },
+  {
+    "id": "u2",
+    "nombre": "Martín Federico",
+    "iniciales": "MF",
+    "rol": "Dueño",
+    "avClass": "av-teal",
+    "recibe": true,
+    "resuelve": true
+  },
+  {
+    "id": "u3",
+    "nombre": "Marcelo Correa",
+    "iniciales": "MC",
+    "rol": "Instalador de equipos",
+    "avClass": "av-amber",
+    "recibe": false,
+    "resuelve": true
+  },
+  {
+    "id": "u4",
+    "nombre": "Capataz de obra",
+    "iniciales": "CA",
+    "rol": "Capataz",
+    "avClass": "av-purple",
+    "recibe": false,
+    "resuelve": true
+  },
+  {
+    "id": "u5",
+    "nombre": "Servicio técnico externo",
+    "iniciales": "ST",
+    "rol": "Externo",
+    "avClass": "av-gray",
+    "recibe": false,
+    "resuelve": true
+  },
+  {
+    "id": "u6",
+    "nombre": "Otro",
+    "iniciales": "OT",
+    "rol": "Otro",
+    "avClass": "av-gray",
+    "recibe": false,
+    "resuelve": true
+  }
+],
   "piletas": [],
   "reclamos": [],
   "visitas": []
@@ -286,7 +334,12 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 
 <div id="app">
   <div id="topbar" class="tb"></div>
-  <div class="content" id="content"></div>
+  <div class="content" id="content">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px">
+      <div style="width:36px;height:36px;border:3px solid var(--g200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite"></div>
+      <div style="font-size:14px;color:var(--g400)">Conectando...</div>
+    </div>
+  </div>
   <nav class="bnav">
     <button class="bn" id="nb-dashboard" onclick="go('dashboard')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -310,7 +363,137 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 
 <div class="toast" id="toast"></div>
 
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <script>
+
+// ── SUPABASE ──
+const SUPA_URL = 'https://avouqkckcvvslwvjmvcy.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2b3Vxa2NrY3Z2c2x3dmptdmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMjM4MzMsImV4cCI6MjA5MTc5OTgzM30.KHkgDwAPOfIv589SLT8KeqWJ_EFt40GcMiv6XEsrQAw';
+
+async function supa(method, table, body, params) {
+  const url = new URL(SUPA_URL + '/rest/v1/' + table);
+  if (params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('Supabase error:', err);
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function supaGet(table, params) { return supa('GET', table, null, params); }
+async function supaPost(table, body)  { return supa('POST', table, body); }
+async function supaPatch(table, body, params) { return supa('PATCH', table, body, params); }
+async function supaDelete(table, params) { return supa('DELETE', table, null, params); }
+
+// ── MAP DB <-> APP ──
+function piletaFromDB(row) {
+  return {
+    id: row.id, nombre: row.nombre, estudio: row.estudio||'',
+    cliente: row.cliente, tel: row.tel||'-', email: row.email||'-',
+    direccion: row.direccion||'', ciudad: row.ciudad||'-',
+    entrega: row.entrega||'-', entregaISO: row.entrega_iso||'',
+    garantia: row.garantia||'-', tipos: row.tipos||[], equipos: row.equipos||[],
+    fotos: row.fotos||[], thumbClass: row.thumb_class||'pt1'
+  };
+}
+
+function piletaToDB(p) {
+  return {
+    id: p.id, nombre: p.nombre, estudio: p.estudio||null,
+    cliente: p.cliente, tel: p.tel||null, email: p.email||null,
+    direccion: p.direccion||null, ciudad: p.ciudad||null,
+    entrega: p.entrega||null, entrega_iso: p.entregaISO||null,
+    garantia: p.garantia||null, tipos: p.tipos||[], equipos: p.equipos||[],
+    fotos: p.fotos||[], thumb_class: p.thumbClass||'pt1'
+  };
+}
+
+function reclamoFromDB(row) {
+  return {
+    id: row.id, num: row.num, titulo: row.titulo, categoria: row.categoria||'Otro',
+    estado: row.estado||'pendiente', prioridad: row.prioridad||'media',
+    pileta: row.pileta_id, recibidoPor: row.recibido_por, asignado: row.asignado,
+    abierto: row.abierto, canal: row.canal, fechaVisita: row.fecha_visita||'',
+    historial: row.historial||[]
+  };
+}
+
+function reclamoToDB(r) {
+  return {
+    id: r.id, num: r.num, titulo: r.titulo, categoria: r.categoria,
+    estado: r.estado, prioridad: r.prioridad, pileta_id: r.pileta,
+    recibido_por: r.recibidoPor, asignado: r.asignado,
+    abierto: r.abierto, canal: r.canal, fecha_visita: r.fechaVisita||null,
+    historial: r.historial||[]
+  };
+}
+
+function visitaFromDB(row) {
+  return {
+    id: row.id, titulo: row.titulo, sub: row.sub, quien: row.quien,
+    fecha: row.fecha, fechaISO: row.fecha_iso, hora: row.hora,
+    tipo: row.tipo||'vis', reclamoId: row.reclamo_id||null
+  };
+}
+
+function visitaToDB(v) {
+  return {
+    id: v.id, titulo: v.titulo, sub: v.sub, quien: v.quien,
+    fecha: v.fecha, fecha_iso: v.fechaISO||null, hora: v.hora,
+    tipo: v.tipo||'vis', reclamo_id: v.reclamoId||null
+  };
+}
+
+// ── LOAD ALL DATA ──
+async function loadDB() {
+  showLoading(true);
+  try {
+    const [pRows, rRows, vRows] = await Promise.all([
+      supaGet('piletas', {order:'created_at.asc'}),
+      supaGet('reclamos', {order:'created_at.desc'}),
+      supaGet('visitas',  {order:'fecha_iso.asc'})
+    ]);
+    DB.piletas  = (pRows||[]).map(piletaFromDB);
+    DB.reclamos = (rRows||[]).map(reclamoFromDB);
+    DB.visitas  = (vRows||[]).map(visitaFromDB);
+    go('dashboard');
+  } catch(e) {
+    showLoading(false);
+    document.getElementById('content').innerHTML =
+      '<div class="empty" style="padding:60px 20px"><div style="font-size:15px;margin-bottom:8px">Error al conectar con la base de datos</div><div style="font-size:13px;color:var(--g400)">' + e.message + '</div><button class="btn-prim" style="margin-top:20px" onclick="loadDB()">Reintentar</button></div>';
+  }
+  showLoading(false);
+}
+
+function showLoading(show) {
+  let el = document.getElementById('loading-overlay');
+  if (show && !el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.9);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+    el.innerHTML = '<div style="width:36px;height:36px;border:3px solid var(--g200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:14px;color:var(--g400)">Cargando...</div>';
+    document.body.appendChild(el);
+    if (!document.getElementById('spin-style')) {
+      const s = document.createElement('style');
+      s.id = 'spin-style';
+      s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(s);
+    }
+  } else if (!show && el) el.remove();
+}
+
 // ── DATA ──
 const DB = JSON.parse(document.getElementById('db').textContent);
 
@@ -465,8 +648,8 @@ function renderDashboard(c) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${p ? p.nombre : r.num}</div>
-                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
+                  <div class="r-title">${r.titulo}</div>
+                  <div class="r-meta">${p ? p.cliente + ' &bull; ' + p.nombre : ''}</div>
                   <div class="r-tags"><div style="display:flex;gap:5px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div></div>
                 </div>
                 <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -593,8 +776,8 @@ function verPileta(id) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${p ? p.nombre : r.num}</div>
-                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
+                  <div class="r-title">${r.titulo}</div>
+                  <div class="r-meta">${r.num} &bull; ${r.abierto}</div>
                   <div style="display:flex;gap:5px;margin-top:6px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div>
                 </div>
                 <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -811,10 +994,9 @@ function guardarPileta() {
   let done = 0;
   function finish() {
     data.fotos = fotos;
-    DB.piletas.push(data);
-    archivosAcumulados = [];
-    go('piletas');
-    toast('Pileta guardada correctamente');
+    supaPost('piletas', piletaToDB(data))
+      .then(() => { DB.piletas.push(data); archivosAcumulados = []; go('piletas'); toast('Pileta guardada'); })
+      .catch(() => toast('Error al guardar. Verificá tu conexión.'));
   }
   if (total === 0) { finish(); return; }
   archivosAcumulados.forEach(a => {
@@ -852,10 +1034,9 @@ function guardarEdicionPileta(pid) {
   let done = 0;
   function finish() {
     archivosAcumulados.forEach(a => { if(a.tipo!=='imagen') data.fotos.push({nombre:a.nombre,tipo:'documento',src:null}); });
-    DB.piletas[idx] = data;
-    archivosAcumulados = [];
-    verPileta(pid);
-    toast('Pileta actualizada');
+    supaPatch('piletas', piletaToDB(data), {'id':'eq.'+pid})
+      .then(() => { DB.piletas[idx] = data; archivosAcumulados = []; verPileta(pid); toast('Pileta actualizada'); })
+      .catch(() => toast('Error al guardar. Verificá tu conexión.'));
   }
   if (total === 0) { finish(); return; }
   archivosAcumulados.forEach(a => {
@@ -904,8 +1085,8 @@ function renderReclamosContent(c) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${p ? p.nombre : r.num}</div>
-                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
+                  <div class="r-title">${r.titulo}</div>
+                  <div class="r-meta">${r.num} &bull; ${p ? p.cliente : ''}</div>
                   <div class="r-tags">
                     <div style="display:flex;gap:5px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div>
                     ${u ? `<div style="display:flex;align-items:center;gap:4px">${av(20,u.avClass,u.iniciales)}<span style="font-size:12px;color:var(--g400)">${u.nombre.split(' ')[0]}</span></div>` : ''}
@@ -1050,9 +1231,13 @@ function addNota(rId) {
   const uActual = DB.usuarios.find(u => u.recibe);
   r.historial.push({tipo:'msg', usuarioId: uActual ? uActual.id : 'u1', fecha:'hoy', hora:now(), texto:txt});
   inp.value = '';
-  const tl = document.getElementById('tl-box');
-  if (tl) tl.innerHTML = renderTimeline(r.historial);
-  toast('Nota guardada');
+  supaPatch('reclamos', {historial: r.historial}, {'id':'eq.'+rId})
+    .then(() => {
+      const tl = document.getElementById('tl-box');
+      if (tl) tl.innerHTML = renderTimeline(r.historial);
+      toast('Nota guardada');
+    })
+    .catch(() => toast('Error al guardar'));
 }
 
 function addNotaActual() { if (curReclamo) addNota(curReclamo); }
@@ -1062,9 +1247,9 @@ function marcarResuelto(rId) {
   if (!r) return;
   r.estado = 'resuelto';
   r.historial.push({tipo:'res', usuarioId:'u1', fecha:'hoy', hora:now(), texto:'Reclamo marcado como Resuelto.'});
-  updateBadge();
-  verReclamo(rId);
-  toast('Reclamo resuelto');
+  supaPatch('reclamos', {estado:'resuelto', historial:r.historial}, {'id':'eq.'+rId})
+    .then(() => { updateBadge(); verReclamo(rId); toast('Reclamo resuelto'); })
+    .catch(() => toast('Error al guardar'));
 }
 
 function editarFechaVisita() {
@@ -1085,8 +1270,9 @@ function guardarFechaVisita() {
   if (!r || !inp) return;
   r.fechaVisita = inp.value;
   r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:`Fecha estimada de visita ${inp.value ? 'actualizada a ' + fmtFecha(inp.value) : 'eliminada'}.`});
-  verReclamo(curReclamo);
-  toast('Fecha guardada');
+  supaPatch('reclamos', {fecha_visita: r.fechaVisita, historial: r.historial}, {'id':'eq.'+curReclamo})
+    .then(() => { verReclamo(curReclamo); toast('Fecha guardada'); })
+    .catch(() => toast('Error al guardar'));
 }
 
 // ── EDITAR RECLAMO ──
@@ -1123,8 +1309,9 @@ function guardarEdicionReclamo(rId) {
   r.prioridad = document.getElementById('er-prio').value;
   r.asignado  = document.getElementById('er-asig').value;
   r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:'Reclamo editado.'});
-  verReclamo(rId);
-  toast('Reclamo actualizado');
+  supaPatch('reclamos', reclamoToDB(r), {'id':'eq.'+rId})
+    .then(() => { verReclamo(rId); toast('Reclamo actualizado'); })
+    .catch(() => toast('Error al guardar'));
 }
 
 // ── NUEVO RECLAMO ──
@@ -1193,10 +1380,9 @@ function guardarReclamo() {
   };
   const desc = document.getElementById('f-desc').value.trim();
   if (desc) nuevo.historial.push({tipo:'msg', usuarioId:recibidoPor, fecha:'hoy', hora:now(), texto:desc});
-  DB.reclamos.unshift(nuevo);
-  filter = 'todos';
-  go('reclamos');
-  toast('Reclamo creado correctamente');
+  supaPost('reclamos', reclamoToDB(nuevo))
+    .then(() => { DB.reclamos.unshift(nuevo); filter = 'todos'; go('reclamos'); toast('Reclamo creado correctamente'); })
+    .catch(() => toast('Error al guardar. Verificá tu conexión.'));
 }
 
 // ── VISITA TÉCNICA ──
@@ -1252,8 +1438,17 @@ function guardarVisita(rId) {
     quien: tId, fecha: fechaLabel, fechaISO, hora, tipo:'vis', reclamoId: recId || null
   });
 
-  if (rId) { verReclamo(rId); toast('Visita registrada'); }
-  else { go('agenda'); toast('Visita agregada a la agenda'); }
+  const saves = [supaPost('visitas', visitaToDB(DB.visitas[0]))];
+  if (recId) {
+    const rr = R(recId);
+    if (rr) saves.push(supaPatch('reclamos', {estado: rr.estado, historial: rr.historial}, {'id':'eq.'+recId}));
+  }
+  Promise.all(saves)
+    .then(() => {
+      if (rId) { verReclamo(rId); toast('Visita registrada'); }
+      else { go('agenda'); toast('Visita agregada a la agenda'); }
+    })
+    .catch(() => toast('Error al guardar'));
 }
 
 // ── AGENDA ──
@@ -1351,8 +1546,8 @@ function renderVisitasList(list) {
     return `<div class="vitem"${rRel?` data-rid="${rRel.id}" onclick="verReclamo(this.dataset.rid)" style="cursor:pointer"`:''}>
       <div style="width:9px;height:9px;border-radius:50%;background:${col};margin-top:5px;flex-shrink:0"></div>
       <div class="vitem-body">
-        <div class="vitem-title">${(function(){ var r=v.reclamoId?R(v.reclamoId):null; var p=r?P(r.pileta):null; return p?p.nombre:v.titulo; })()}</div>
-        <div class="vitem-sub">${v.titulo} &bull; ${v.sub}</div>
+        <div class="vitem-title">${v.titulo}</div>
+        <div class="vitem-sub">${v.sub}</div>
         <div class="vitem-who">
           ${u ? av(22,u.avClass,u.iniciales) + `<span style="font-size:14px;color:var(--g800);font-weight:500">${u.nombre.split(' ')[0]}</span>` : ''}
           <span style="font-size:13px;color:var(--g400)">${fechaLbl}${v.hora?' &bull; '+v.hora:''}</span>
@@ -1364,7 +1559,7 @@ function renderVisitasList(list) {
 }
 
 // ── INIT ──
-go('dashboard');
+loadDB();
 
 </script>
 </body>
