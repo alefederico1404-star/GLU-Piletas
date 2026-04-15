@@ -387,6 +387,52 @@ function guardarFechaVisita(rId) {
   toast('Fecha de visita guardada');
 }
 
+
+function showEditarReclamo(rId) {
+  var r = R(rId);
+  if (!r) return;
+  var backFn = "verReclamo('" + rId + "')";
+  tbBack('Reclamo', "verReclamo(curReclamo)", 'Editar reclamo', false);
+  var cats = ['Capacitación','Consulta general','Bomba','Filtro','Calefacción','Jacuzzi','Problema Eléctrico','Controladora Hydronics','Iluminación','Pérdida de agua en el gabinete','Caño roto fuera del gabinete','Descenso de nivel de la pileta','Regulador de Nivel','Flotante de Cisterna','Revestimiento Interior','Piso Exterior','Pedido de Repuestos','Otro'];
+  var c = document.getElementById('content');
+  c.innerHTML = '<div class="pad">' +
+    '<label class="flbl">Título del reclamo</label>' +
+    '<input class="finput" id="er-tit" value="' + r.titulo.replace(/"/g,'&quot;') + '">' +
+    '<label class="flbl">Categoría</label>' +
+    '<select class="fselect" id="er-cat">' + cats.map(function(cat){ return '<option value="' + cat + '"' + (cat === r.categoria ? ' selected' : '') + '>' + cat + '</option>'; }).join('') + '</select>' +
+    '<label class="flbl">Prioridad</label>' +
+    '<select class="fselect" id="er-prio">' +
+      '<option value="baja"' + (r.prioridad==='baja'?' selected':'') + '>Baja</option>' +
+      '<option value="media"' + (r.prioridad==='media'?' selected':'') + '>Media</option>' +
+      '<option value="alta"' + (r.prioridad==='alta'?' selected':'') + '>Alta</option>' +
+      '<option value="urgente"' + (r.prioridad==='urgente'?' selected':'') + '>Urgente</option>' +
+    '</select>' +
+    '<label class="flbl">Asignado para resolver</label>' +
+    '<select class="fselect" id="er-asig">' + DB.usuarios.filter(function(u){return u.resuelve;}).map(function(u){ return '<option value="' + u.id + '"' + (u.id===r.asignado?' selected':'') + '>' + u.nombre + (u.rol!=='Dueño'?' ('+u.rol+')':'') + '</option>'; }).join('') + '</select>' +
+    '<button class="btn-prim" onclick="guardarEdicionReclamo(curReclamo)">Guardar cambios</button>' +
+    '<button class="btn-sec" onclick="verReclamo(curReclamo)">Cancelar</button>' +
+    '</div>';
+}
+
+function guardarEdicionReclamo(rId) {
+  var r = R(rId);
+  if (!r) return;
+  var nuevoTitulo = document.getElementById('er-tit').value.trim();
+  if (!nuevoTitulo) { toast('El título no puede estar vacío'); return; }
+  r.titulo = nuevoTitulo;
+  r.categoria = document.getElementById('er-cat').value;
+  r.prioridad = document.getElementById('er-prio').value;
+  r.asignado = document.getElementById('er-asig').value;
+  r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:'Reclamo editado.'});
+  verReclamo(rId);
+  toast('Reclamo actualizado');
+}
+
+function irAReclamos(f) {
+  filter = f;
+  go('reclamos');
+}
+
 // Navigate
 function go(s) {
   screen = s;
@@ -416,10 +462,10 @@ function renderDashboard(c) {
 
   c.innerHTML = '<div class="pad">' +
     '<div class="stat-grid">' +
-      '<div class="stat"><div class="stat-lbl">Pendientes</div><div class="stat-row"><div class="stat-val">' + pend + '</div><div class="stat-ico i-pend"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div></div></div>' +
-      '<div class="stat"><div class="stat-lbl">En progreso</div><div class="stat-row"><div class="stat-val">' + prog + '</div><div class="stat-ico i-prog"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div></div>' +
-      '<div class="stat"><div class="stat-lbl">Resueltos</div><div class="stat-row"><div class="stat-val">' + res + '</div><div class="stat-ico i-res"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div></div>' +
-      '<div class="stat"><div class="stat-lbl">Urgentes</div><div class="stat-row"><div class="stat-val">' + urg + '</div><div class="stat-ico i-urg"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></div></div></div>' +
+      '<div class="stat" style="cursor:pointer" onclick="irAReclamos(\'pendiente\')"><div class="stat-lbl">Pendientes</div><div class="stat-row"><div class="stat-val">' + pend + '</div><div class="stat-ico i-pend"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div></div></div>' +
+      '<div class="stat" style="cursor:pointer" onclick="irAReclamos(\'progreso\')"><div class="stat-lbl">En progreso</div><div class="stat-row"><div class="stat-val">' + prog + '</div><div class="stat-ico i-prog"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div></div>' +
+      '<div class="stat" style="cursor:pointer" onclick="irAReclamos(\'resuelto\')"><div class="stat-lbl">Resueltos</div><div class="stat-row"><div class="stat-val">' + res + '</div><div class="stat-ico i-res"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div></div>' +
+      '<div class="stat" style="cursor:pointer" onclick="irAReclamos(\'urgente\')"><div class="stat-lbl">Urgentes</div><div class="stat-row"><div class="stat-val">' + urg + '</div><div class="stat-ico i-urg"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></div></div></div>' +
     '</div>' +
     '<div class="slbl">Reclamos activos</div>' +
     '<div class="card">' +
@@ -469,6 +515,102 @@ function filterPiletas(q) {
     (p.nombre + p.cliente + p.ciudad).toLowerCase().includes(q.toLowerCase())
   ) : DB.piletas;
   document.getElementById('plist').innerHTML = piletaCards(list);
+}
+
+
+function showEditarPileta(pId) {
+  var p = P(pId);
+  if (!p) return;
+  curPileta = pId;
+  tbBack('Pileta', "verPileta(curPileta)", 'Editar pileta', false);
+  var tiposPileta = ['Cerrada con Skimmer','Desborde Tradicional','Desborde finlandés','Jacuzzi en Pileta','Jacuzzi Independiente'];
+  var equiposBase = ['Filtro + Bomba Pileta','Filtro + Bomba Jacuzzi','Calefacción a Gas','Calefacción x Bomba de Calor','Equipo Jets + Aire Jacuzzi','Clorinador Salino'];
+  var tiposHTML = tiposPileta.map(function(t){
+    var checked = p.tipos && p.tipos.indexOf(t) > -1 ? 'checked' : '';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--g100);cursor:pointer"><input type="checkbox" value="' + t + '" ' + checked + ' class="ep-tipo" style="width:20px;height:20px;accent-color:var(--blue);flex-shrink:0"><span style="font-size:15px;color:var(--g900)">' + t + '</span></label>';
+  }).join('');
+  var equiposHTML = equiposBase.map(function(e){
+    var checked = p.equipos && p.equipos.some(function(eq){return eq.indexOf(e)===0;}) ? 'checked' : '';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--g100);cursor:pointer"><input type="checkbox" value="' + e + '" ' + checked + ' class="ep-equipo" style="width:20px;height:20px;accent-color:var(--blue);flex-shrink:0"><span style="font-size:15px;color:var(--g900)">' + e + '</span></label>';
+  }).join('');
+  var blancaChecked = p.equipos && p.equipos.some(function(e){return e.indexOf('Iluminación Blanca')===0;}) ? 'checked' : '';
+  var blancaCant = p.equipos ? (p.equipos.find(function(e){return e.indexOf('Iluminación Blanca')===0;})||'').replace(/[^0-9]/g,'') : '';
+  var rgbChecked = p.equipos && p.equipos.some(function(e){return e.indexOf('Iluminación RGB')===0;}) ? 'checked' : '';
+  var rgbCant = p.equipos ? (p.equipos.find(function(e){return e.indexOf('Iluminación RGB')===0;})||'').replace(/[^0-9]/g,'') : '';
+  var c = document.getElementById('content');
+  c.innerHTML = '<div class="pad">' +
+    '<label class="flbl">Nombre de la obra</label><input class="finput" id="ep-nom" value="' + (p.nombre||'').replace(/"/g,'&quot;') + '">' +
+    '<label class="flbl">Estudio / Constructora</label><input class="finput" id="ep-estudio" value="' + (p.estudio||'').replace(/"/g,'&quot;') + '">' +
+    '<label class="flbl">Cliente final</label><input class="finput" id="ep-cli" value="' + (p.cliente||'').replace(/"/g,'&quot;') + '">' +
+    '<label class="flbl">Teléfono</label><input class="finput" id="ep-tel" value="' + (p.tel==='-'?'':p.tel||'') + '">' +
+    '<label class="flbl">Email</label><input class="finput" id="ep-email" value="' + (p.email==='-'?'':p.email||'') + '">' +
+    '<label class="flbl">Dirección</label><input class="finput" id="ep-dir" value="' + (p.direccion||'').replace(/"/g,'&quot;') + '">' +
+    '<label class="flbl">Ciudad</label><input class="finput" id="ep-ciudad" value="' + (p.ciudad==='-'?'':p.ciudad||'') + '">' +
+    '<label class="flbl">Fecha de entrega</label><input class="finput" id="ep-entrega" type="month" onchange="calcGarantiaEdit()" value="' + (p.entregaISO||'') + '" style="color:var(--g900)">' +
+    '<div id="ep-garantia-row" style="' + (p.garantia && p.garantia!=='-' ? '' : 'display:none;') + 'background:var(--green-l);border:0.5px solid var(--green);border-radius:10px;padding:10px 14px;margin-top:-8px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:14px;color:var(--green)">Fin garantía equipos</span><span id="ep-garantia-fecha" style="font-size:15px;font-weight:500;color:var(--green)">' + (p.garantia||'') + '</span></div>' +
+    '<label class="flbl" style="margin-bottom:8px">Tipo de pileta</label>' +
+    '<div class="card" style="margin-bottom:14px">' + tiposHTML + '</div>' +
+    '<label class="flbl" style="margin-bottom:8px">Equipos instalados</label>' +
+    '<div class="card" style="margin-bottom:0">' + equiposHTML +
+    '<div style="padding:10px 14px;border-bottom:0.5px solid var(--g100)"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="ep-il-blanca" ' + blancaChecked + ' style="width:20px;height:20px;accent-color:var(--blue)" onchange="toggleCantidad(\'ep-cnt-blanca\',this.checked)"><span style="font-size:15px;color:var(--g900)">Iluminación Blanca</span></label><div id="ep-cnt-blanca" style="' + (blancaChecked ? '' : 'display:none;') + 'margin-top:8px;margin-left:30px"><input class="finput" id="ep-cant-blanca" type="number" min="1" value="' + blancaCant + '" placeholder="Cantidad de luces" style="margin-bottom:0"></div></div>' +
+    '<div style="padding:10px 14px"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="ep-il-rgb" ' + rgbChecked + ' style="width:20px;height:20px;accent-color:var(--blue)" onchange="toggleCantidad(\'ep-cnt-rgb\',this.checked)"><span style="font-size:15px;color:var(--g900)">Iluminación RGB</span></label><div id="ep-cnt-rgb" style="' + (rgbChecked ? '' : 'display:none;') + 'margin-top:8px;margin-left:30px"><input class="finput" id="ep-cant-rgb" type="number" min="1" value="' + rgbCant + '" placeholder="Cantidad de luces" style="margin-bottom:0"></div></div>' +
+    '</div>' +
+    '<button class="btn-prim" style="margin-top:14px" onclick="guardarEdicionPileta(curPileta)">Guardar cambios</button>' +
+    '<button class="btn-sec" onclick="verPileta(curPileta)">Cancelar</button>' +
+    '</div>';
+}
+
+function calcGarantiaEdit() {
+  var val = document.getElementById('ep-entrega').value;
+  var row = document.getElementById('ep-garantia-row');
+  var lbl = document.getElementById('ep-garantia-fecha');
+  if (!val || !row || !lbl) return;
+  var parts = val.split('-');
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  lbl.textContent = meses[parseInt(parts[1])-1] + ' ' + (parseInt(parts[0])+1);
+  row.style.display = 'flex';
+}
+
+function guardarEdicionPileta(pId) {
+  var p = P(pId);
+  if (!p) return;
+  var nom = document.getElementById('ep-nom').value.trim();
+  var cli = document.getElementById('ep-cli').value.trim();
+  if (!nom) { toast('El nombre no puede estar vacío'); return; }
+  if (!cli) { toast('El cliente no puede estar vacío'); return; }
+  p.nombre = nom;
+  p.estudio = document.getElementById('ep-estudio').value.trim();
+  p.cliente = cli;
+  p.tel = document.getElementById('ep-tel').value.trim() || '-';
+  p.email = document.getElementById('ep-email').value.trim() || '-';
+  p.direccion = document.getElementById('ep-dir').value.trim();
+  p.ciudad = document.getElementById('ep-ciudad').value.trim() || '-';
+  var entISO = document.getElementById('ep-entrega').value;
+  p.entregaISO = entISO;
+  if (entISO) {
+    var pts = entISO.split('-');
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    p.entrega = meses[parseInt(pts[1])-1] + ' ' + pts[0];
+    p.garantia = meses[parseInt(pts[1])-1] + ' ' + (parseInt(pts[0])+1);
+  }
+  var tipos = [];
+  document.querySelectorAll('.ep-tipo:checked').forEach(function(cb){ tipos.push(cb.value); });
+  p.tipos = tipos;
+  var equipos = [];
+  document.querySelectorAll('.ep-equipo:checked').forEach(function(cb){ equipos.push(cb.value); });
+  var blanca = document.getElementById('ep-il-blanca');
+  if (blanca && blanca.checked) {
+    var cant = document.getElementById('ep-cant-blanca').value;
+    equipos.push('Iluminación Blanca' + (cant ? ' (' + cant + ' luces)' : ''));
+  }
+  var rgb = document.getElementById('ep-il-rgb');
+  if (rgb && rgb.checked) {
+    var cant2 = document.getElementById('ep-cant-rgb').value;
+    equipos.push('Iluminación RGB' + (cant2 ? ' (' + cant2 + ' luces)' : ''));
+  }
+  p.equipos = equipos;
+  verPileta(pId);
+  toast('Pileta actualizada');
 }
 
 function showNuevaPileta() {
@@ -759,7 +901,16 @@ function verPileta(id) {
         (p.direccion ? '<div class="ir"><span class="ir-lbl">Direcci\u00f3n</span><span class="ir-val" style="font-size:13px">' + p.direccion + '</span></div>' : '') +
         '<div class="ir"><span class="ir-lbl">Ciudad</span><span class="ir-val">' + p.ciudad + '</span></div>' +
         '<div class="ir"><span class="ir-lbl">Entrega</span><span class="ir-val">' + p.entrega + '</span></div>' +
-        (p.garantia && p.garantia !== '-' ? '<div class="ir"><span class="ir-lbl" style="color:var(--green)">Fin garantía</span><span class="ir-val" style="color:var(--green)">' + p.garantia + '</span></div>' : '') +
+        (p.garantia && p.garantia !== '-' ? (function(){
+        var meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var pts=p.garantia.split(' ');
+        var gY=parseInt(pts[1]); var gM=meses.indexOf(pts[0]);
+        var now=new Date();
+        var ok=(gY>now.getFullYear())||(gY===now.getFullYear()&&gM>=now.getMonth());
+        var col=ok?'var(--green)':'var(--red)';
+        var lbl=ok?'Garant\u00eda vigente hasta':'Garant\u00eda vencida';
+        return '<div class="ir"><span class="ir-lbl" style="color:'+col+'">'+lbl+'</span><span class="ir-val" style="color:'+col+'">' + p.garantia + '</span></div>';
+      })() : '') +
         (p.tipos && p.tipos.length ? '<div class="ir" style="align-items:flex-start"><span class="ir-lbl">Tipo</span><div style="text-align:right;font-size:13px;color:var(--g900);font-weight:500;line-height:1.6">' + p.tipos.join('<br>') + '</div></div>' : '') +
         (p.equipos && p.equipos.length ? '<div class="ir" style="align-items:flex-start"><span class="ir-lbl">Equipos</span><div style="text-align:right;font-size:13px;color:var(--g900);font-weight:500;line-height:1.6">' + p.equipos.join('<br>') + '</div></div>' : '') +
       '</div>' +
@@ -775,7 +926,10 @@ function verPileta(id) {
             '<svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>'
           ).join('')) +
       '</div>' +
-      '<button class="btn-prim" onclick="showNuevoReclamo(\'' + id + '\')">+ Nuevo reclamo para esta pileta</button>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0">' +
+      '<button class="btn-sec" style="margin:0" onclick="showEditarPileta(\'" + id + "\')">✏️ Editar pileta</button>' +
+      '<button class="btn-prim" style="margin:0" onclick="showNuevoReclamo(\'" + id + "\')">' +
+      '+ Nuevo reclamo</button></div>' +
     '</div>';
 }
 
@@ -796,7 +950,7 @@ function renderReclamosContent(c) {
   const prog = DB.reclamos.filter(r => r.estado === 'progreso').length;
   const res = DB.reclamos.filter(r => r.estado === 'resuelto').length;
 
-  c.innerHTML = '<div class="pad">' +
+  c.innerHTML = '<div style="padding:12px 10px">' +
     '<div class="chips">' +
       '<div class="chip"><div class="chip-val" style="color:var(--amber)">' + pend + '</div><div class="chip-lbl">Pendientes</div></div>' +
       '<div class="chip"><div class="chip-val" style="color:var(--blue)">' + prog + '</div><div class="chip-lbl">En progreso</div></div>' +
@@ -847,10 +1001,13 @@ function verReclamo(id) {
         '<div class="hero-meta-row"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' + (p ? p.cliente : '') + ' &bull; v\u00eda ' + r.canal + '</div>' +
         '<div class="hero-meta-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>Abierto: ' + r.abierto + '</div>' +
       '</div>' +
-      '<div class="hero-tags">' +
-        '<span class="htag ' + estadoHtag + '">' + (estadoLabel[r.estado] || r.estado) + '</span>' +
-        (r.prioridad !== 'baja' ? '<span class="htag ht-urg">' + r.prioridad.charAt(0).toUpperCase() + r.prioridad.slice(1) + '</span>' : '') +
-        '<span class="htag ht-cat">' + r.categoria + '</span>' +
+      '<div class="hero-tags" style="justify-content:space-between">' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+          '<span class="htag ' + estadoHtag + '">' + (estadoLabel[r.estado] || r.estado) + '</span>' +
+          (r.prioridad !== 'baja' ? '<span class="htag ht-urg">' + r.prioridad.charAt(0).toUpperCase() + r.prioridad.slice(1) + '</span>' : '') +
+          '<span class="htag ht-cat">' + r.categoria + '</span>' +
+        '</div>' +
+        '<button onclick="showEditarReclamo(curReclamo)" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:white;cursor:pointer;font-family:var(--font);flex-shrink:0">Editar</button>' +
       '</div>' +
     '</div>' +
     '<div class="pad">' +
@@ -1065,7 +1222,7 @@ function guardarVisita(rId) {
   if (recId) {
     const r = R(recId);
     if (r) {
-      r.historial.push({tipo:'vis', usuarioId:tId, fecha:'hoy', hora, texto: notas || 'Visita t\u00e9cnica realizada.'});
+      r.historial.push({tipo:'vis', usuarioId:tId, fecha: fechaLabel, hora, texto: (fechaLabel !== 'hoy' ? 'Visita programada para el ' + fechaLabel + (hora ? ' a las ' + hora : '') + '. ' : '') + (notas || 'Sin notas adicionales.')});
       if (r.estado === 'pendiente') r.estado = 'progreso';
     }
   }
