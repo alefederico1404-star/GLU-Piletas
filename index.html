@@ -269,68 +269,16 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 <script id="data-json" type="application/json">
 {
   "usuarios": [
-    {"id":"u1","nombre":"Alejandro Federico","iniciales":"AF","rol":"Due\u00f1o","avClass":"av-blue","recibe":true,"resuelve":true},
-    {"id":"u2","nombre":"Mart\u00edn Federico","iniciales":"MF","rol":"Due\u00f1o","avClass":"av-teal","recibe":true,"resuelve":true},
+    {"id":"u1","nombre":"Alejandro Federico","iniciales":"AF","rol":"Dueño","avClass":"av-blue","recibe":true,"resuelve":true},
+    {"id":"u2","nombre":"Martín Federico","iniciales":"MF","rol":"Dueño","avClass":"av-teal","recibe":true,"resuelve":true},
     {"id":"u3","nombre":"Marcelo Correa","iniciales":"MC","rol":"Instalador de equipos","avClass":"av-amber","recibe":false,"resuelve":true},
     {"id":"u4","nombre":"Capataz de obra","iniciales":"CA","rol":"Capataz","avClass":"av-purple","recibe":false,"resuelve":true},
-    {"id":"u5","nombre":"Servicio t\u00e9cnico externo","iniciales":"ST","rol":"Externo","avClass":"av-gray","recibe":false,"resuelve":true},
+    {"id":"u5","nombre":"Servicio técnico externo","iniciales":"ST","rol":"Externo","avClass":"av-gray","recibe":false,"resuelve":true},
     {"id":"u6","nombre":"Otro","iniciales":"OT","rol":"Otro","avClass":"av-gray","recibe":false,"resuelve":true}
   ],
-  "piletas": [
-    {"id":"p1","nombre":"Roque S\u00e1enz Pe\u00f1a","cliente":"Fernanda G\u00f3mez","tel":"+54 11 5555-1234","email":"fernanda@email.com","entrega":"Feb 2024","ciudad":"San Isidro","thumbClass":"pt1"},
-    {"id":"p2","nombre":"Bah\u00eda del Sol","cliente":"Fernanda G\u00f3mez","tel":"+54 11 5555-1234","email":"fernanda@email.com","entrega":"Mar 2024","ciudad":"Tigre","thumbClass":"pt2"},
-    {"id":"p3","nombre":"Los Aromos","cliente":"Roberto Montoya","tel":"+54 11 4444-5678","email":"roberto@email.com","entrega":"Ene 2024","ciudad":"Pilar","thumbClass":"pt3"}
-  ],
-  "reclamos": [
-    {
-      "id":"r1","num":"#007","titulo":"No encienden las luces de la pileta",
-      "categoria":"Equipamiento el\u00e9ctrico","estado":"pendiente","prioridad":"urgente",
-      "pileta":"p1","asignado":"u2","abierto":"10 abr 2025","canal":"WhatsApp",
-      "historial":[
-        {"tipo":"sys","fecha":"10 abr","hora":"09:14","texto":"Reclamo creado. Fernanda G\u00f3mez ingres\u00f3 el reclamo v\u00eda WhatsApp.","cliente":{"nombre":"Fernanda G\u00f3mez","iniciales":"FG","avClass":"av-green"}},
-        {"tipo":"msg","usuarioId":"u1","fecha":"10 abr","hora":"09:32","texto":"Llam\u00f3 al cliente. Fernanda confirma que las luces nunca funcionaron desde la entrega."},
-        {"tipo":"urg","usuarioId":"u1","fecha":"10 abr","hora":"09:35","texto":"Marc\u00f3 como Urgente. Motivo: defecto desde entrega, pileta sin uso."},
-        {"tipo":"vis","usuarioId":"u2","fecha":"11 abr","hora":"10:00-11:30","texto":"Revis\u00f3 tablero el\u00e9ctrico. Encontr\u00f3 transformador quemado y polaridad invertida desde instalaci\u00f3n original.","checks":[{"ok":true,"txt":"Tablero inspeccionado"},{"ok":true,"txt":"Causa identificada"},{"ok":false,"txt":"Reparaci\u00f3n pendiente - falta repuesto"}]},
-        {"tipo":"msg","usuarioId":"u2","fecha":"11 abr","hora":"12:05","texto":"Inform\u00f3 a la cliente sobre el diagn\u00f3stico. Se le indic\u00f3 que el repuesto llega en 1-2 d\u00edas h\u00e1biles."},
-        {"tipo":"msg","cliente":{"nombre":"Fernanda G\u00f3mez","iniciales":"FG","avClass":"av-green"},"fecha":"13 abr","hora":"08:47","texto":"Hay novedades del repuesto? Ya pasaron 2 d\u00edas. - v\u00eda WhatsApp."},
-        {"tipo":"msg","usuarioId":"u1","fecha":"13 abr","hora":"09:15","texto":"Confirm\u00f3 disponibilidad del transformador en dep\u00f3sito. Coordinando segunda visita con Carlos M\u00e9ndez."}
-      ]
-    },
-    {
-      "id":"r2","num":"#006","titulo":"Se apaga la caldera Peisa TX-300",
-      "categoria":"Calefacci\u00f3n","estado":"progreso","prioridad":"alta",
-      "pileta":"p2","asignado":"u3","abierto":"12 abr 2025","canal":"Llamada",
-      "historial":[
-        {"tipo":"sys","fecha":"12 abr","hora":"10:00","texto":"Reclamo creado por Mar\u00eda Rodr\u00edguez tras llamada de la cliente."},
-        {"tipo":"msg","usuarioId":"u1","fecha":"12 abr","hora":"10:15","texto":"Asign\u00f3 a Juan P\u00e9rez para revisi\u00f3n t\u00e9cnica."},
-        {"tipo":"vis","usuarioId":"u3","fecha":"13 abr","hora":"09:00-10:30","texto":"Revis\u00f3 caldera. Detect\u00f3 falla en el sensor de temperatura. Requiere reemplazo de pieza.","checks":[{"ok":true,"txt":"Caldera inspeccionada"},{"ok":true,"txt":"Falla identificada"},{"ok":false,"txt":"Pieza pendiente de pedido"}]}
-      ]
-    },
-    {
-      "id":"r3","num":"#005","titulo":"P\u00e9rdida de agua en el filtro",
-      "categoria":"Filtraci\u00f3n","estado":"pendiente","prioridad":"media",
-      "pileta":"p3","asignado":"u2","abierto":"10 abr 2025","canal":"Email",
-      "historial":[
-        {"tipo":"sys","fecha":"10 abr","hora":"09:15","texto":"Reclamo creado. Roberto Montoya report\u00f3 por email."},
-        {"tipo":"msg","usuarioId":"u1","fecha":"10 abr","hora":"11:00","texto":"Respondi\u00f3 al cliente confirmando recepci\u00f3n del reclamo."}
-      ]
-    },
-    {
-      "id":"r4","num":"#004","titulo":"Ruido en la bomba de filtrado",
-      "categoria":"Equipamiento","estado":"resuelto","prioridad":"baja",
-      "pileta":"p3","asignado":"u3","abierto":"5 abr 2025","canal":"WhatsApp",
-      "historial":[
-        {"tipo":"sys","fecha":"5 abr","hora":"14:00","texto":"Reclamo creado v\u00eda WhatsApp."},
-        {"tipo":"vis","usuarioId":"u3","fecha":"7 abr","hora":"10:00-11:00","texto":"Revis\u00f3 bomba. Encontr\u00f3 tornillo suelto en el rodete. Se ajust\u00f3 en el momento.","checks":[{"ok":true,"txt":"Bomba inspeccionada"},{"ok":true,"txt":"Problema resuelto en visita"}]},
-        {"tipo":"res","usuarioId":"u3","fecha":"7 abr","hora":"11:30","texto":"Reclamo marcado como Resuelto. Cliente confirm\u00f3 que el ruido desapareci\u00f3."}
-      ]
-    }
-  ],
-  "visitas": [
-    {"id":"v1","titulo":"Carlos M. - Luces pileta RSP","sub":"Reclamo #007 - Urgente","quien":"u2","fecha":"14 abr","hora":"09:00","tipo":"urg"},
-    {"id":"v2","titulo":"Juan P. - Filtro Los Aromos","sub":"Reclamo #005 - Media","quien":"u3","fecha":"21 abr","hora":"10:30","tipo":"vis"},
-    {"id":"v3","titulo":"Carlos M. - Caldera Bah\u00eda del Sol","sub":"Revisi\u00f3n preventiva","quien":"u2","fecha":"25 abr","hora":"14:00","tipo":"ord"}
-  ]
+  "piletas": [],
+  "reclamos": [],
+  "visitas": []
 }
 </script>
 
@@ -501,7 +449,7 @@ function renderPiletas(c) {
   tbSimple('Piletas', DB.piletas.length + ' registradas', 'showNuevaPileta()');
   c.innerHTML = '<div class="pad">' +
     '<div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Buscar cliente, direcci\u00f3n..." oninput="filterPiletas(this.value)"></div>' +
-    '<div id="plist">' + piletaCards(DB.piletas) + '</div></div>';
+    '<div id="plist">' + (DB.piletas.length === 0 ? '<div class="empty" style="padding:40px 20px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--g200)" stroke-width="1.5" style="margin:0 auto 12px;display:block"><path d="M3 12 Q6 6 12 8 Q18 10 21 6 Q20 14 15 17 Q10 20 3 18Z"/></svg><div style="font-size:15px;color:var(--g400);margin-bottom:8px">No hay piletas registradas</div><div style="font-size:13px;color:var(--g400)">Tocá el + para agregar la primera</div></div>' : piletaCards(DB.piletas)) + '</div></div>';
 }
 
 function piletaCards(list) {
@@ -1116,7 +1064,10 @@ function guardarVisita(rId) {
   const recId = document.getElementById('v-rec').value || rId;
   if (recId) {
     const r = R(recId);
-    if (r) r.historial.push({tipo:'vis', usuarioId:tId, fecha:'hoy', hora, texto: notas || 'Visita t\u00e9cnica realizada.'});
+    if (r) {
+      r.historial.push({tipo:'vis', usuarioId:tId, fecha:'hoy', hora, texto: notas || 'Visita t\u00e9cnica realizada.'});
+      if (r.estado === 'pendiente') r.estado = 'progreso';
+    }
   }
   var fechaInput = document.getElementById('v-fecha').value;
   var mesesCortos = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
