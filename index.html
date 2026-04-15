@@ -1118,11 +1118,15 @@ function guardarVisita(rId) {
     const r = R(recId);
     if (r) r.historial.push({tipo:'vis', usuarioId:tId, fecha:'hoy', hora, texto: notas || 'Visita t\u00e9cnica realizada.'});
   }
+  var fechaInput = document.getElementById('v-fecha').value;
+  var mesesCortos = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var fechaLabel = fechaInput ? (function(){ var p=fechaInput.split('-'); return p[2]+' '+mesesCortos[parseInt(p[1])-1]; })() : 'hoy';
   DB.visitas.unshift({
     id: 'v' + Date.now(),
     titulo: u.nombre.split(' ')[0] + ' - ' + (notas.substring(0, 28) || 'Visita t\u00e9cnica'),
-    sub: recId ? (R(recId) ? R(recId).num : '') : 'Sin reclamo',
-    quien: tId, fecha: 'hoy', hora, tipo: 'vis'
+    sub: recId ? (R(recId) ? R(recId).num + ' - ' + R(recId).titulo.substring(0,25) : '') : 'Sin reclamo asociado',
+    quien: tId, fecha: fechaLabel, fechaISO: fechaInput, hora, tipo: 'vis',
+    reclamoId: recId || null
   });
   if (rId) { verReclamo(rId); toast('Visita registrada en el historial'); }
   else { go('agenda'); toast('Visita agregada a la agenda'); }
@@ -1130,45 +1134,135 @@ function guardarVisita(rId) {
 
 // ── AGENDA ──
 function renderAgenda(c) {
-  tbSimple('Agenda', 'Abril 2025', 'showNuevaVisita(null)');
-  const days = ['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b','Dom'];
-  const evts = {7:[{t:'vis',l:'Visita RSP'}],11:[{t:'vis',l:'Carlos - luces'}],14:[{t:'urg',l:'Urgente #007'}],15:[{t:'ord',l:'Orden #012'}],21:[{t:'vis',l:'Juan - filtro'}],25:[{t:'ord',l:'Carlos - caldera'}]};
-  let calDays = '';
-  const firstDay = 1;
-  for (let i = 0; i < firstDay; i++) calDays += '<div class="cal-day other"><div class="cal-date">' + (31 - firstDay + i + 1) + '</div></div>';
-  for (let d = 1; d <= 30; d++) {
-    const ev = evts[d] || [];
-    calDays += '<div class="cal-day' + (d === 14 ? ' today' : '') + '"><div class="cal-date">' + d + '</div>' +
-      ev.map(e => '<div class="cel ce-' + e.t + '">' + e.l + '</div>').join('') + '</div>';
+  tbSimple('Agenda', '', 'showNuevaVisita(null)');
+  renderAgendaContent(c);
+}
+
+var agendaYear = new Date().getFullYear();
+var agendaMonth = new Date().getMonth(); // 0-based
+
+function renderAgendaContent(c) {
+  if (!c) c = document.getElementById('content');
+  var hoy = new Date();
+  var todayY = hoy.getFullYear();
+  var todayM = hoy.getMonth();
+  var todayD = hoy.getDate();
+
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  // First day of month (0=Sun..6=Sat), convert to Mon-based (0=Mon..6=Sun)
+  var firstDate = new Date(agendaYear, agendaMonth, 1);
+  var firstDow = firstDate.getDay(); // 0=Sun
+  var firstMon = (firstDow === 0) ? 6 : firstDow - 1; // Mon-based offset
+
+  var daysInMonth = new Date(agendaYear, agendaMonth + 1, 0).getDate();
+
+  // Build visita map by date string YYYY-MM-DD
+  var visitaMap = {};
+  DB.visitas.forEach(function(v) {
+    if (!v.fechaISO) return;
+    if (!visitaMap[v.fechaISO]) visitaMap[v.fechaISO] = [];
+    visitaMap[v.fechaISO].push(v);
+  });
+
+  // Calendar cells
+  var calDays = '';
+  // Empty cells before first day
+  for (var i = 0; i < firstMon; i++) {
+    calDays += '<div class="cal-day other"></div>';
   }
-  const rem = (firstDay + 30) % 7;
-  if (rem > 0) for (let i = 1; i <= 7 - rem; i++) calDays += '<div class="cal-day other"><div class="cal-date">' + i + '</div></div>';
+  for (var d = 1; d <= daysInMonth; d++) {
+    var mm = String(agendaMonth + 1).padStart(2,'0');
+    var dd = String(d).padStart(2,'0');
+    var dateStr = agendaYear + '-' + mm + '-' + dd;
+    var isToday = (agendaYear === todayY && agendaMonth === todayM && d === todayD);
+    var evts = visitaMap[dateStr] || [];
+    var evtHtml = evts.slice(0,2).map(function(v) {
+      var cls = v.tipo === 'urg' ? 'ce-urg' : v.tipo === 'ord' ? 'ce-ord' : 'ce-vis';
+      var lbl = v.titulo.substring(0,10);
+      return '<div class="cel ' + cls + '">' + lbl + '</div>';
+    }).join('');
+    if (evts.length > 2) evtHtml += '<div class="cel ce-vis">+' + (evts.length-2) + '</div>';
+    calDays += '<div class="cal-day' + (isToday ? ' today' : '') + '" data-date="' + dateStr + '" onclick="filtrarDia(this.dataset.date)">' +
+      '<div class="cal-date">' + d + '</div>' + evtHtml + '</div>';
+  }
+  // Fill remaining cells
+  var total = firstMon + daysInMonth;
+  var rem = total % 7;
+  if (rem > 0) for (var j = 0; j < 7 - rem; j++) calDays += '<div class="cal-day other"></div>';
+
+  // Upcoming visitas - sorted
+  var upcoming = DB.visitas.filter(function(v){ return !!v.fechaISO; });
+  upcoming.sort(function(a,b){ return a.fechaISO > b.fechaISO ? 1 : -1; });
+  if (upcoming.length === 0) upcoming = DB.visitas; // fallback if no dates
 
   c.innerHTML = '<div class="pad">' +
-    '<div class="cal-hdr"><div class="cal-month">Abril 2025</div><div class="cal-navs"><div class="cal-nav"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div><div class="cal-nav"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div></div>' +
-    '<div class="card" style="padding:10px">' +
-      '<div class="cal-grid" style="margin-bottom:4px">' + days.map(d => '<div class="cal-lbl">' + d + '</div>').join('') + '</div>' +
+    '<div class="cal-hdr">' +
+      '<div class="cal-month">' + meses[agendaMonth] + ' ' + agendaYear + '</div>' +
+      '<div class="cal-navs">' +
+        '<div class="cal-nav" onclick="cambiarMes(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>' +
+        '<div class="cal-nav" onclick="cambiarMes(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card" style="padding:10px;margin-bottom:14px">' +
+      '<div class="cal-grid" style="margin-bottom:4px">' + dias.map(function(d){return '<div class="cal-lbl">'+d+'</div>';}).join('') + '</div>' +
       '<div class="cal-grid">' + calDays + '</div>' +
-      '<div style="display:flex;gap:12px;margin-top:10px;font-size:22px;color:var(--g400)">' +
+      '<div style="display:flex;gap:12px;margin-top:10px;font-size:13px;color:var(--g400)">' +
         '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:var(--blue)"></div>Visita</div>' +
         '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:var(--teal)"></div>Orden</div>' +
         '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:var(--red)"></div>Urgente</div>' +
       '</div>' +
     '</div>' +
-    '<div class="slbl" style="margin-top:16px">Pr\u00f3ximas visitas</div>' +
-    DB.visitas.map(v => {
-      const u = U(v.quien);
-      const col = v.tipo === 'urg' ? 'var(--red)' : v.tipo === 'ord' ? 'var(--teal)' : 'var(--blue)';
-      return '<div class="vitem">' +
-        '<div style="width:8px;height:8px;border-radius:50%;background:' + col + ';margin-top:5px;flex-shrink:0"></div>' +
-        '<div class="vitem-body"><div class="vitem-title">' + v.titulo + '</div>' +
+    '<div id="agenda-list">' + renderVisitasList(upcoming) + '</div>' +
+  '</div>';
+}
+
+function cambiarMes(delta) {
+  agendaMonth += delta;
+  if (agendaMonth > 11) { agendaMonth = 0; agendaYear++; }
+  if (agendaMonth < 0)  { agendaMonth = 11; agendaYear--; }
+  renderAgendaContent();
+}
+
+function filtrarDia(dateStr) {
+  var visitas = DB.visitas.filter(function(v){ return v.fechaISO === dateStr; });
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var parts = dateStr.split('-');
+  var label = parts[2] + ' ' + meses[parseInt(parts[1])-1] + ' ' + parts[0];
+  var list = document.getElementById('agenda-list');
+  if (!list) return;
+  if (visitas.length === 0) {
+    list.innerHTML = '<div class="slbl">Sin visitas el ' + label + '</div>';
+  } else {
+    list.innerHTML = '<div class="slbl">Visitas del ' + label + '</div>' + renderVisitasList(visitas);
+  }
+}
+
+function renderVisitasList(list) {
+  if (!list || list.length === 0) {
+    return '<div class="slbl">Próximas visitas</div><div class="empty">No hay visitas programadas</div>';
+  }
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return '<div class="slbl">Próximas visitas</div>' + list.map(function(v) {
+    var u = U(v.quien);
+    var col = v.tipo === 'urg' ? 'var(--red)' : v.tipo === 'ord' ? 'var(--teal)' : 'var(--blue)';
+    var fechaLabel = v.fechaISO ? (function(){
+      var p = v.fechaISO.split('-');
+      return p[2] + ' ' + meses[parseInt(p[1])-1];
+    })() : v.fecha;
+    var rRel = v.reclamoId ? R(v.reclamoId) : null;
+    return '<div class="vitem" ' + (rRel ? 'data-rid="' + rRel.id + '" onclick="verReclamo(this.dataset.rid)" style="cursor:pointer"' : '') + '>' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:' + col + ';margin-top:6px;flex-shrink:0"></div>' +
+      '<div class="vitem-body">' +
+        '<div class="vitem-title">' + v.titulo + '</div>' +
         '<div class="vitem-sub">' + v.sub + '</div>' +
         '<div class="vitem-who">' + (u ? av(20, u.avClass, u.iniciales) : '') +
-        '<span style="font-size:17px;color:var(--g400)">' + v.fecha + ' &bull; ' + v.hora + '</span></div></div>' +
-        '<button class="tb-btn" style="background:var(--blue-l);flex-shrink:0" onclick="showNuevaVisita(null)"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
-        '</div>';
-    }).join('') +
+        '<span style="font-size:13px;color:var(--g400)">' + fechaLabel + (v.hora ? ' &bull; ' + v.hora : '') + '</span></div>' +
+      '</div>' +
+      (rRel ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g400)" stroke-width="2" style="flex-shrink:0;margin-top:4px"><polyline points="9 18 15 12 9 6"/></svg>' : '') +
     '</div>';
+  }).join('');
 }
 
 // ── INIT ──
