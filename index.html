@@ -645,8 +645,8 @@ function renderDashboard(c) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${r.titulo}</div>
-                  <div class="r-meta">${p ? p.cliente + ' &bull; ' + p.nombre : ''}</div>
+                  <div class="r-title">${p ? p.nombre : r.num}</div>
+                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
                   <div class="r-tags"><div style="display:flex;gap:5px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div></div>
                 </div>
                 <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -773,8 +773,8 @@ function verPileta(id) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${r.titulo}</div>
-                  <div class="r-meta">${r.num} &bull; ${r.abierto}</div>
+                  <div class="r-title">${p ? p.nombre : r.num}</div>
+                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
                   <div style="display:flex;gap:5px;margin-top:6px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div>
                 </div>
                 <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1082,8 +1082,8 @@ function renderReclamosContent(c) {
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
-                  <div class="r-title">${r.titulo}</div>
-                  <div class="r-meta">${r.num} &bull; ${p ? p.cliente : ''}</div>
+                  <div class="r-title">${p ? p.nombre : r.num}</div>
+                  <div class="r-meta">${r.num} &bull; ${r.titulo}</div>
                   <div class="r-tags">
                     <div style="display:flex;gap:5px">${stateTag(r.estado)}${prioTag(r.prioridad)}</div>
                     ${u ? `<div style="display:flex;align-items:center;gap:4px">${av(20,u.avClass,u.iniciales)}<span style="font-size:12px;color:var(--g400)">${u.nombre.split(' ')[0]}</span></div>` : ''}
@@ -1543,8 +1543,8 @@ function renderVisitasList(list) {
     return `<div class="vitem"${rRel?` data-rid="${rRel.id}" onclick="verReclamo(this.dataset.rid)" style="cursor:pointer"`:''}>
       <div style="width:9px;height:9px;border-radius:50%;background:${col};margin-top:5px;flex-shrink:0"></div>
       <div class="vitem-body">
-        <div class="vitem-title">${v.titulo}</div>
-        <div class="vitem-sub">${v.sub}</div>
+        <div class="vitem-title">${(function(){ var rr=v.reclamoId?R(v.reclamoId):null; var pp=rr?P(rr.pileta):null; return pp?pp.nombre:v.titulo; })()}</div>
+        <div class="vitem-sub">${v.titulo} &bull; ${v.sub}</div>
         <div class="vitem-who">
           ${u ? av(22,u.avClass,u.iniciales) + `<span style="font-size:14px;color:var(--g800);font-weight:500">${u.nombre.split(' ')[0]}</span>` : ''}
           <span style="font-size:13px;color:var(--g400)">${fechaLbl}${v.hora?' &bull; '+v.hora:''}</span>
