@@ -279,7 +279,7 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
     {"id":"u6","nombre":"Otro","iniciales":"OT","rol":"Otro","avClass":"av-gray","recibe":false,"resuelve":true,"usuario":false}
   ],
   "piletas": [],
-  "reclamos": [],
+  "solicitudes": [],
   "visitas": []
 }
 </script>
@@ -301,9 +301,9 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
       <svg viewBox="0 0 24 24"><path d="M3 12 Q6 6 12 8 Q18 10 21 6 Q20 14 15 17 Q10 20 3 18Z"/></svg>
       Piletas
     </button>
-    <button class="bn" id="nb-reclamos" onclick="go('reclamos')">
+    <button class="bn" id="nb-solicitudes" onclick="go('solicitudes')">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Reclamos
+      Solicitudes
       <span class="badge" id="badge" style="display:none">0</span>
     </button>
     <button class="bn" id="nb-agenda" onclick="go('agenda')">
@@ -316,7 +316,7 @@ html,body{height:100%;overflow:hidden;background:var(--g50);font-family:var(--fo
 <div class="toast" id="toast"></div>
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-<script>
+<scr
 
 
 // ── USUARIO ACTIVO ──
@@ -417,7 +417,7 @@ function piletaToDB(p) {
   };
 }
 
-function reclamoFromDB(row) {
+function solicitudFromDB(row) {
   return {
     id: row.id, num: row.num, titulo: row.titulo, categoria: row.categoria||'Otro',
     estado: row.estado||'pendiente', prioridad: row.prioridad||'media',
@@ -427,7 +427,7 @@ function reclamoFromDB(row) {
   };
 }
 
-function reclamoToDB(r) {
+function solicitudToDB(r) {
   return {
     id: r.id, num: r.num, titulo: r.titulo, categoria: r.categoria,
     estado: r.estado, prioridad: r.prioridad, pileta_id: r.pileta,
@@ -441,7 +441,7 @@ function visitaFromDB(row) {
   return {
     id: row.id, titulo: row.titulo, sub: row.sub, quien: row.quien,
     fecha: row.fecha, fechaISO: row.fecha_iso, hora: row.hora,
-    tipo: row.tipo||'vis', reclamoId: row.reclamo_id||null
+    tipo: row.tipo||'vis', solicitudId: row.solicitud_id||null
   };
 }
 
@@ -449,7 +449,7 @@ function visitaToDB(v) {
   return {
     id: v.id, titulo: v.titulo, sub: v.sub, quien: v.quien,
     fecha: v.fecha, fecha_iso: v.fechaISO||null, hora: v.hora,
-    tipo: v.tipo||'vis', reclamo_id: v.reclamoId||null
+    tipo: v.tipo||'vis', solicitud_id: v.solicitudId||null
   };
 }
 
@@ -459,11 +459,11 @@ async function loadDB() {
   try {
     const [pRows, rRows, vRows] = await Promise.all([
       supaGet('piletas', {order:'created_at.asc'}),
-      supaGet('reclamos', {order:'created_at.desc'}),
+      supaGet('solicitudes', {order:'created_at.desc'}),
       supaGet('visitas',  {order:'fecha_iso.asc'})
     ]);
     DB.piletas  = (pRows||[]).map(piletaFromDB);
-    DB.reclamos = (rRows||[]).map(reclamoFromDB);
+    DB.solicitudes = (rRows||[]).map(solicitudFromDB);
     DB.visitas  = (vRows||[]).map(visitaFromDB);
     showLogin();
   } catch(e) {
@@ -497,7 +497,7 @@ const DB = JSON.parse(document.getElementById('db').textContent);
 // ── STATE ──
 let screen = 'dashboard';
 let filter = 'todos';
-let curReclamo = null;
+let curSolicitud = null;
 let curPileta = null;
 let agendaYear = new Date().getFullYear();
 let agendaMonth = new Date().getMonth();
@@ -509,8 +509,8 @@ const LOGO_SRC = document.getElementById('logo-data').textContent.trim();
 // ── HELPERS ──
 const U  = id => DB.usuarios.find(u => u.id === id);
 const P  = id => DB.piletas.find(p => p.id === id);
-const R  = id => DB.reclamos.find(r => r.id === id);
-const activos = pid => DB.reclamos.filter(r => r.pileta === pid && r.estado !== 'resuelto');
+const R  = id => DB.solicitudes.find(r => r.id === id);
+const activos = pid => DB.solicitudes.filter(r => r.pileta === pid && r.estado !== 'resuelto');
 
 function av(size, cls, ini) {
   return `<div class="av ${cls}" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.38)}px">${ini}</div>`;
@@ -571,7 +571,7 @@ function toast(msg) {
 }
 
 function updateBadge() {
-  const n = DB.reclamos.filter(r => r.estado !== 'resuelto').length;
+  const n = DB.solicitudes.filter(r => r.estado !== 'resuelto').length;
   const b = document.getElementById('badge');
   if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
 }
@@ -600,48 +600,48 @@ function go(s) {
   const c = document.getElementById('content');
   if (s === 'dashboard') renderDashboard(c);
   else if (s === 'piletas') renderPiletas(c);
-  else if (s === 'reclamos') renderReclamos(c);
+  else if (s === 'solicitudes') renderReclamos(c);
   else if (s === 'agenda') renderAgenda(c);
   updateBadge();
 }
 
-function irAReclamos(f) { filter = f; go('reclamos'); }
+function irASolicitudes(f) { filter = f; go('solicitudes'); }
 
 // ── DASHBOARD ──
 function renderDashboard(c) {
   tbSimple('GLU PILETAS', 'Post-venta');
-  const pend = DB.reclamos.filter(r => r.estado === 'pendiente').length;
-  const prog = DB.reclamos.filter(r => r.estado === 'progreso').length;
-  const res  = DB.reclamos.filter(r => r.estado === 'resuelto').length;
-  const urg  = DB.reclamos.filter(r => r.prioridad === 'urgente' && r.estado !== 'resuelto').length;
-  const recientes = DB.reclamos.filter(r => r.estado !== 'resuelto').slice(0, 4);
+  const pend = DB.solicitudes.filter(r => r.estado === 'pendiente').length;
+  const prog = DB.solicitudes.filter(r => r.estado === 'progreso').length;
+  const res  = DB.solicitudes.filter(r => r.estado === 'resuelto').length;
+  const urg  = DB.solicitudes.filter(r => r.prioridad === 'urgente' && r.estado !== 'resuelto').length;
+  const recientes = DB.solicitudes.filter(r => r.estado !== 'resuelto').slice(0, 4);
 
   c.innerHTML = `<div class="pad">
     <div class="stat-grid">
-      <div class="stat" onclick="irAReclamos('pendiente')">
+      <div class="stat" onclick="irASolicitudes('pendiente')">
         <div class="stat-lbl">Pendientes</div>
         <div class="stat-row"><div class="stat-val">${pend}</div><div class="stat-ico i-pend"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div></div>
       </div>
-      <div class="stat" onclick="irAReclamos('progreso')">
+      <div class="stat" onclick="irASolicitudes('progreso')">
         <div class="stat-lbl">En progreso</div>
         <div class="stat-row"><div class="stat-val">${prog}</div><div class="stat-ico i-prog"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
       </div>
-      <div class="stat" onclick="irAReclamos('resuelto')">
+      <div class="stat" onclick="irASolicitudes('resuelto')">
         <div class="stat-lbl">Resueltos</div>
         <div class="stat-row"><div class="stat-val">${res}</div><div class="stat-ico i-res"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div>
       </div>
-      <div class="stat" onclick="irAReclamos('urgente')">
+      <div class="stat" onclick="irASolicitudes('urgente')">
         <div class="stat-lbl">Urgentes</div>
         <div class="stat-row"><div class="stat-val">${urg}</div><div class="stat-ico i-urg"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></div></div>
       </div>
     </div>
-    <div class="slbl">Reclamos activos</div>
+    <div class="slbl">Solicitudes activos</div>
     <div class="card">
       ${recientes.length === 0
-        ? '<div class="empty">Sin reclamos activos</div>'
+        ? '<div class="empty">Sin solicitudes activos</div>'
         : recientes.map(r => {
             const p = P(r.pileta);
-            return `<div class="ritem" onclick="verReclamo('${r.id}')">
+            return `<div class="ritem" onclick="verSolicitud('${r.id}')">
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
@@ -695,7 +695,7 @@ function piletaCards(list) {
   return list.map((p, i) => {
     const ac = activos(p.id);
     const stag = ac.length === 0
-      ? '<span class="tag t-res">Sin reclamos activos</span>'
+      ? '<span class="tag t-res">Sin solicitudes activos</span>'
       : ac.some(r => r.prioridad === 'urgente')
         ? `<span class="tag t-urg">${ac.length} urgente</span>`
         : `<span class="tag t-pend">${ac.length} abierto${ac.length > 1 ? 's' : ''}</span>`;
@@ -721,7 +721,7 @@ function filterPiletas(q) {
 function verPileta(id) {
   curPileta = id;
   const p = P(id);
-  const recs = DB.reclamos.filter(r => r.pileta === id);
+  const recs = DB.solicitudes.filter(r => r.pileta === id);
   tbBack('Piletas', "go('piletas')", p.nombre);
   const c = document.getElementById('content');
 
@@ -765,11 +765,11 @@ function verPileta(id) {
         ${tiposHtml}${equiposHtml}
       </div>
       ${fotosHtml}
-      <div class="slbl">Reclamos (${recs.length})</div>
+      <div class="slbl">Solicitudes (${recs.length})</div>
       <div class="card">
         ${recs.length === 0
-          ? '<div class="empty">Sin reclamos registrados</div>'
-          : recs.map(r => `<div class="ritem" onclick="verReclamo('${r.id}')">
+          ? '<div class="empty">Sin solicitudes registrados</div>'
+          : recs.map(r => `<div class="ritem" onclick="verSolicitud('${r.id}')">
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
@@ -783,7 +783,7 @@ function verPileta(id) {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="btn-sec" style="margin:0" onclick="showEditarPileta(curPileta)">Editar pileta</button>
-        <button class="btn-prim" style="margin:0" onclick="showNuevoReclamo(curPileta)">+ Nuevo reclamo</button>
+        <button class="btn-prim" style="margin:0" onclick="showNuevoSolicitud(curPileta)">+ Nuevo solicitud</button>
       </div>
     </div>`;
 }
@@ -1048,20 +1048,20 @@ function guardarEdicionPileta(pid) {
 // ── RECLAMOS ──
 const CATS = ['Capacitaci\u00f3n','Consulta general','Bomba','Filtro','Calefacci\u00f3n','Jacuzzi','Problema El\u00e9ctrico','Controladora Hydronics','Iluminaci\u00f3n','P\u00e9rdida de agua en el gabinete','Ca\u00f1o roto fuera del gabinete','Descenso de nivel de la pileta','Regulador de Nivel','Flotante de Cisterna','Revestimiento Interior','Piso Exterior','Pedido de Repuestos','Otro'];
 
-function renderReclamos(c) {
-  tbSimple('Reclamos', '', 'showNuevoReclamo(null)');
-  renderReclamosContent(c);
+function renderSolicitudes(c) {
+  tbSimple('Solicitudes', '', 'showNuevoSolicitud(null)');
+  renderSolicitudesContent(c);
 }
 
-function renderReclamosContent(c) {
+function renderSolicitudesContent(c) {
   const filters = ['todos','pendiente','progreso','urgente','resuelto'];
   const labels  = ['Todos','Pendientes','En progreso','Urgentes','Resueltos'];
-  let list = DB.reclamos.slice();
+  let list = DB.solicitudes.slice();
   if (filter === 'urgente') list = list.filter(r => r.prioridad === 'urgente' && r.estado !== 'resuelto');
   else if (filter !== 'todos') list = list.filter(r => r.estado === filter);
-  const pend = DB.reclamos.filter(r => r.estado === 'pendiente').length;
-  const prog = DB.reclamos.filter(r => r.estado === 'progreso').length;
-  const res  = DB.reclamos.filter(r => r.estado === 'resuelto').length;
+  const pend = DB.solicitudes.filter(r => r.estado === 'pendiente').length;
+  const prog = DB.solicitudes.filter(r => r.estado === 'progreso').length;
+  const res  = DB.solicitudes.filter(r => r.estado === 'resuelto').length;
 
   c.innerHTML = `<div class="pad">
     <div class="chips">
@@ -1074,11 +1074,11 @@ function renderReclamosContent(c) {
     </div>
     <div class="card">
       ${list.length === 0
-        ? '<div class="empty">No hay reclamos en esta categor\u00eda</div>'
+        ? '<div class="empty">No hay solicitudes en esta categor\u00eda</div>'
         : list.map(r => {
             const p = P(r.pileta);
             const u = U(r.asignado);
-            return `<div class="ritem" onclick="verReclamo('${r.id}')">
+            return `<div class="ritem" onclick="verSolicitud('${r.id}')">
               <div class="r-row">
                 <div class="r-dot ${dotClass(r)}"></div>
                 <div class="r-body">
@@ -1097,17 +1097,17 @@ function renderReclamosContent(c) {
   </div>`;
 }
 
-function setFilter(f) { filter = f; renderReclamosContent(document.getElementById('content')); }
+function setFilter(f) { filter = f; renderSolicitudesContent(document.getElementById('content')); }
 
 // ── DETALLE RECLAMO ──
-function verReclamo(id) {
-  curReclamo = id;
+function verSolicitud(id) {
+  curSolicitud = id;
   const r = R(id);
   const p = P(r.pileta);
   const u = U(r.asignado);
   const uRec = U(r.recibidoPor);
-  const backFn = screen === 'piletas' ? `verPileta('${r.pileta}')` : screen === 'dashboard' ? "go('dashboard')" : "go('reclamos')";
-  tbBack('Reclamos', backFn, r.num);
+  const backFn = screen === 'piletas' ? `verPileta('${r.pileta}')` : screen === 'dashboard' ? "go('dashboard')" : "go('solicitudes')";
+  tbBack('Solicitudes', backFn, r.num);
 
   const estadoHtag = {pendiente:'ht-pend',progreso:'ht-prog',resuelto:'ht-res'}[r.estado] || 'ht-cat';
   const estadoLbl  = {pendiente:'Pendiente',progreso:'En progreso',resuelto:'Resuelto'}[r.estado] || r.estado;
@@ -1137,7 +1137,7 @@ function verReclamo(id) {
           ${r.prioridad !== 'baja' ? `<span class="htag ht-urg">${r.prioridad.charAt(0).toUpperCase()+r.prioridad.slice(1)}</span>` : ''}
           <span class="htag ht-cat">${r.categoria}</span>
         </div>
-        <button class="ht-edit" onclick="showEditarReclamo(curReclamo)">Editar</button>
+        <button class="ht-edit" onclick="showEditarSolicitud(curSolicitud)">Editar</button>
       </div>
     </div>
     <div class="pad">
@@ -1160,10 +1160,10 @@ function verReclamo(id) {
           </button>
         </div>
       </div>
-      <button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(curReclamo)">+ Registrar visita t\u00e9cnica</button>
+      <button class="btn-sec" style="margin-top:14px" onclick="showNuevaVisita(curSolicitud)">+ Registrar visita t\u00e9cnica</button>
       ${r.estado !== 'resuelto'
-        ? '<button class="btn-grn" onclick="marcarResuelto(curReclamo)">Marcar como resuelto</button>'
-        : '<div style="background:var(--green-l);border:.5px solid var(--green);border-radius:12px;padding:13px;text-align:center;margin-bottom:8px"><span style="color:var(--green);font-size:15px;font-weight:500">Reclamo resuelto</span></div>'}
+        ? '<button class="btn-grn" onclick="marcarResuelto(curSolicitud)">Marcar como resuelto</button>'
+        : '<div style="background:var(--green-l);border:.5px solid var(--green);border-radius:12px;padding:13px;text-align:center;margin-bottom:8px"><span style="color:var(--green);font-size:15px;font-weight:500">Solicitud resuelto</span></div>'}
     </div>`;
 }
 
@@ -1228,7 +1228,7 @@ function addNota(rId) {
   const uActual = getCurrentUser();
   r.historial.push({tipo:'msg', usuarioId: uActual ? uActual.id : 'u1', fecha:'hoy', hora:now(), texto:txt});
   inp.value = '';
-  supaPatch('reclamos', {historial: r.historial}, {'id':'eq.'+rId})
+  supaPatch('solicitudes', {historial: r.historial}, {'id':'eq.'+rId})
     .then(() => {
       const tl = document.getElementById('tl-box');
       if (tl) tl.innerHTML = renderTimeline(r.historial);
@@ -1237,49 +1237,49 @@ function addNota(rId) {
     .catch(() => toast('Error al guardar'));
 }
 
-function addNotaActual() { if (curReclamo) addNota(curReclamo); }
+function addNotaActual() { if (curSolicitud) addNota(curSolicitud); }
 
 function marcarResuelto(rId) {
   const r = R(rId);
   if (!r) return;
   r.estado = 'resuelto';
-  r.historial.push({tipo:'res', usuarioId:'u1', fecha:'hoy', hora:now(), texto:'Reclamo marcado como Resuelto.'});
-  supaPatch('reclamos', {estado:'resuelto', historial:r.historial}, {'id':'eq.'+rId})
-    .then(() => { updateBadge(); verReclamo(rId); toast('Reclamo resuelto'); })
+  r.historial.push({tipo:'res', usuarioId:'u1', fecha:'hoy', hora:now(), texto:'Solicitud marcado como Resuelto.'});
+  supaPatch('solicitudes', {estado:'resuelto', historial:r.historial}, {'id':'eq.'+rId})
+    .then(() => { updateBadge(); verSolicitud(rId); toast('Solicitud resuelto'); })
     .catch(() => toast('Error al guardar'));
 }
 
 function editarFechaVisita() {
-  const r = R(curReclamo);
+  const r = R(curSolicitud);
   const row = document.getElementById('fv-row');
   if (!row || !r) return;
   row.innerHTML = `<span class="ir-lbl" style="color:var(--blue)">Fecha estimada</span>
     <div style="display:flex;align-items:center;gap:6px">
       <input type="date" id="fv-input" value="${r.fechaVisita||''}" style="border:.5px solid var(--blue);border-radius:8px;padding:6px 10px;font-size:14px;font-family:var(--font);color:var(--g900);outline:none">
       <button onclick="guardarFechaVisita()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--blue);color:white;cursor:pointer;font-size:13px;font-family:var(--font)">OK</button>
-      <button onclick="verReclamo(curReclamo)" style="padding:6px 10px;border-radius:8px;border:.5px solid var(--g200);background:var(--g0);color:var(--g600);cursor:pointer;font-size:13px;font-family:var(--font)">X</button>
+      <button onclick="verSolicitud(curSolicitud)" style="padding:6px 10px;border-radius:8px;border:.5px solid var(--g200);background:var(--g0);color:var(--g600);cursor:pointer;font-size:13px;font-family:var(--font)">X</button>
     </div>`;
 }
 
 function guardarFechaVisita() {
-  const r = R(curReclamo);
+  const r = R(curSolicitud);
   const inp = document.getElementById('fv-input');
   if (!r || !inp) return;
   r.fechaVisita = inp.value;
   r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:`Fecha estimada de visita ${inp.value ? 'actualizada a ' + fmtFecha(inp.value) : 'eliminada'}.`});
-  supaPatch('reclamos', {fecha_visita: r.fechaVisita, historial: r.historial}, {'id':'eq.'+curReclamo})
-    .then(() => { verReclamo(curReclamo); toast('Fecha guardada'); })
+  supaPatch('solicitudes', {fecha_visita: r.fechaVisita, historial: r.historial}, {'id':'eq.'+curSolicitud})
+    .then(() => { verSolicitud(curSolicitud); toast('Fecha guardada'); })
     .catch(() => toast('Error al guardar'));
 }
 
 // ── EDITAR RECLAMO ──
-function showEditarReclamo(rId) {
+function showEditarSolicitud(rId) {
   const r = R(rId);
   if (!r) return;
-  tbBack('Reclamo', 'verReclamo(curReclamo)', 'Editar reclamo');
+  tbBack('Solicitud', 'verSolicitud(curSolicitud)', 'Editar solicitud');
   const c = document.getElementById('content');
   c.innerHTML = `<div class="pad">
-    <label class="flbl">T\u00edtulo del reclamo</label>
+    <label class="flbl">T\u00edtulo del solicitud</label>
     <input class="finput" id="er-tit" value="${r.titulo.replace(/"/g,'&quot;')}">
     <label class="flbl">Categor\u00eda</label>
     <select class="fselect" id="er-cat">${CATS.map(cat=>`<option${cat===r.categoria?' selected':''}>${cat}</option>`).join('')}</select>
@@ -1291,12 +1291,12 @@ function showEditarReclamo(rId) {
     <select class="fselect" id="er-asig">
       ${DB.usuarios.filter(u=>u.resuelve).map(u=>`<option value="${u.id}"${u.id===r.asignado?' selected':''}>${u.nombre}${u.rol!=='Due\u00f1o'?' ('+u.rol+')':''}</option>`).join('')}
     </select>
-    <button class="btn-prim" onclick="guardarEdicionReclamo(curReclamo)">Guardar cambios</button>
-    <button class="btn-sec" onclick="verReclamo(curReclamo)">Cancelar</button>
+    <button class="btn-prim" onclick="guardarEdicionSolicitud(curSolicitud)">Guardar cambios</button>
+    <button class="btn-sec" onclick="verSolicitud(curSolicitud)">Cancelar</button>
   </div>`;
 }
 
-function guardarEdicionReclamo(rId) {
+function guardarEdicionSolicitud(rId) {
   const r = R(rId);
   if (!r) return;
   const tit = document.getElementById('er-tit').value.trim();
@@ -1305,24 +1305,24 @@ function guardarEdicionReclamo(rId) {
   r.categoria = document.getElementById('er-cat').value;
   r.prioridad = document.getElementById('er-prio').value;
   r.asignado  = document.getElementById('er-asig').value;
-  r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:'Reclamo editado.'});
-  supaPatch('reclamos', reclamoToDB(r), {'id':'eq.'+rId})
-    .then(() => { verReclamo(rId); toast('Reclamo actualizado'); })
+  r.historial.push({tipo:'sys', fecha:'hoy', hora:now(), texto:'Solicitud editado.'});
+  supaPatch('solicitudes', solicitudToDB(r), {'id':'eq.'+rId})
+    .then(() => { verSolicitud(rId); toast('Solicitud actualizado'); })
     .catch(() => toast('Error al guardar'));
 }
 
 // ── NUEVO RECLAMO ──
-function showNuevoReclamo(piletaId) {
+function showNuevoSolicitud(piletaId) {
   const pId = piletaId || '';
-  const backFn = piletaId ? 'verPileta(curPileta)' : "go('reclamos')";
-  tbBack('Reclamos', backFn, 'Nuevo reclamo');
+  const backFn = piletaId ? 'verPileta(curPileta)' : "go('solicitudes')";
+  tbBack('Solicitudes', backFn, 'Nuevo solicitud');
   const c = document.getElementById('content');
   c.innerHTML = `<div class="pad">
     <label class="flbl">Pileta</label>
     <select class="fselect" id="f-pil">
       ${DB.piletas.map(p=>`<option value="${p.id}"${p.id===pId?' selected':''}>${p.nombre} - ${p.cliente}</option>`).join('')}
     </select>
-    <label class="flbl">T\u00edtulo del reclamo</label>
+    <label class="flbl">T\u00edtulo del solicitud</label>
     <input class="finput" id="f-tit" placeholder="Descripci\u00f3n breve del problema">
     <label class="flbl">Categor\u00eda</label>
     <select class="fselect" id="f-cat">${CATS.map(cat=>`<option>${cat}</option>`).join('')}</select>
@@ -1347,12 +1347,12 @@ function showNuevoReclamo(piletaId) {
     <input class="finput" id="f-fecha-visita" type="date">
     <label class="flbl">Descripci\u00f3n inicial</label>
     <textarea class="ftextarea" id="f-desc" placeholder="Detalle lo que el cliente report\u00f3..."></textarea>
-    <button class="btn-prim" onclick="guardarReclamo()">Crear reclamo</button>
+    <button class="btn-prim" onclick="guardarSolicitud()">Crear solicitud</button>
     <button class="btn-sec" onclick="${backFn}">Cancelar</button>
   </div>`;
 }
 
-function guardarReclamo() {
+function guardarSolicitud() {
   const titulo = document.getElementById('f-tit').value.trim();
   if (!titulo) { toast('Ingres\u00e1 un t\u00edtulo'); return; }
   if (DB.piletas.length === 0) { toast('Primero carg\u00e1 una pileta'); return; }
@@ -1362,7 +1362,7 @@ function guardarReclamo() {
   const uRec = U(recibidoPor), uRes = U(asignado);
   const nuevo = {
     id: 'r' + Date.now(),
-    num: '#' + String(DB.reclamos.length + 1).padStart(3,'0'),
+    num: '#' + String(DB.solicitudes.length + 1).padStart(3,'0'),
     titulo, canal, recibidoPor, asignado,
     categoria:    document.getElementById('f-cat').value,
     estado:       'pendiente',
@@ -1372,30 +1372,30 @@ function guardarReclamo() {
     fechaVisita:  document.getElementById('f-fecha-visita').value || '',
     historial: [{
       tipo:'sys', fecha:'hoy', hora:now(),
-      texto:`Reclamo recibido por ${uRec?uRec.nombre:'-'} v\u00eda ${canal}. Asignado a: ${uRes?uRes.nombre:'-'}.`
+      texto:`Solicitud recibido por ${uRec?uRec.nombre:'-'} v\u00eda ${canal}. Asignado a: ${uRes?uRes.nombre:'-'}.`
     }]
   };
   const desc = document.getElementById('f-desc').value.trim();
   if (desc) nuevo.historial.push({tipo:'msg', usuarioId:recibidoPor, fecha:'hoy', hora:now(), texto:desc});
-  supaPost('reclamos', reclamoToDB(nuevo))
-    .then(() => { DB.reclamos.unshift(nuevo); filter = 'todos'; go('reclamos'); toast('Reclamo creado correctamente'); })
+  supaPost('solicitudes', solicitudToDB(nuevo))
+    .then(() => { DB.solicitudes.unshift(nuevo); filter = 'todos'; go('solicitudes'); toast('Solicitud creado correctamente'); })
     .catch(() => toast('Error al guardar. Verificá tu conexión.'));
 }
 
 // ── VISITA TÉCNICA ──
 function showNuevaVisita(rId) {
-  const backFn = rId ? 'verReclamo(curReclamo)' : "go('agenda')";
-  tbBack(rId ? 'Reclamo' : 'Agenda', backFn, 'Nueva visita t\u00e9cnica');
+  const backFn = rId ? 'verSolicitud(curSolicitud)' : "go('agenda')";
+  tbBack(rId ? 'Solicitud' : 'Agenda', backFn, 'Nueva visita t\u00e9cnica');
   const c = document.getElementById('content');
   c.innerHTML = `<div class="pad">
     <label class="flbl">T\u00e9cnico que realiza la visita</label>
     <select class="fselect" id="v-tec">
       ${DB.usuarios.filter(u=>u.resuelve).map(u=>`<option value="${u.id}">${u.nombre}${u.rol!=='Due\u00f1o'?' ('+u.rol+')':''}</option>`).join('')}
     </select>
-    <label class="flbl">Reclamo asociado</label>
+    <label class="flbl">Solicitud asociado</label>
     <select class="fselect" id="v-rec">
-      <option value="">- Sin reclamo -</option>
-      ${DB.reclamos.filter(r=>r.estado!=='resuelto').map(r=>`<option value="${r.id}"${r.id===rId?' selected':''}>${r.num} - ${r.titulo.substring(0,35)}</option>`).join('')}
+      <option value="">- Sin solicitud -</option>
+      ${DB.solicitudes.filter(r=>r.estado!=='resuelto').map(r=>`<option value="${r.id}"${r.id===rId?' selected':''}>${r.num} - ${r.titulo.substring(0,35)}</option>`).join('')}
     </select>
     <label class="flbl">Fecha de la visita</label>
     <input class="finput" id="v-fecha" type="date" value="${new Date().toISOString().split('T')[0]}">
@@ -1431,18 +1431,18 @@ function guardarVisita(rId) {
   DB.visitas.unshift({
     id: 'v' + Date.now(),
     titulo: `${u ? u.nombre.split(' ')[0] : ''} - ${notas.substring(0,28) || 'Visita t\u00e9cnica'}`,
-    sub: recId ? (R(recId) ? R(recId).num + ' - ' + R(recId).titulo.substring(0,25) : '') : 'Sin reclamo',
-    quien: tId, fecha: fechaLabel, fechaISO, hora, tipo:'vis', reclamoId: recId || null
+    sub: recId ? (R(recId) ? R(recId).num + ' - ' + R(recId).titulo.substring(0,25) : '') : 'Sin solicitud',
+    quien: tId, fecha: fechaLabel, fechaISO, hora, tipo:'vis', solicitudId: recId || null
   });
 
   const saves = [supaPost('visitas', visitaToDB(DB.visitas[0]))];
   if (recId) {
     const rr = R(recId);
-    if (rr) saves.push(supaPatch('reclamos', {estado: rr.estado, historial: rr.historial}, {'id':'eq.'+recId}));
+    if (rr) saves.push(supaPatch('solicitudes', {estado: rr.estado, historial: rr.historial}, {'id':'eq.'+recId}));
   }
   Promise.all(saves)
     .then(() => {
-      if (rId) { verReclamo(rId); toast('Visita registrada'); }
+      if (rId) { verSolicitud(rId); toast('Visita registrada'); }
       else { go('agenda'); toast('Visita agregada a la agenda'); }
     })
     .catch(() => toast('Error al guardar'));
@@ -1538,12 +1538,12 @@ function renderVisitasList(list) {
   return `<div class="slbl">Pr\u00f3ximas visitas</div>` + list.map(v => {
     const u = U(v.quien);
     const col = v.tipo==='urg'?'var(--red)':v.tipo==='ord'?'var(--teal)':'var(--blue)';
-    const rRel = v.reclamoId ? R(v.reclamoId) : null;
+    const rRel = v.solicitudId ? R(v.solicitudId) : null;
     const fechaLbl = v.fechaISO ? fmtFecha(v.fechaISO) : v.fecha;
-    return `<div class="vitem"${rRel?` data-rid="${rRel.id}" onclick="verReclamo(this.dataset.rid)" style="cursor:pointer"`:''}>
+    return `<div class="vitem"${rRel?` data-rid="${rRel.id}" onclick="verSolicitud(this.dataset.rid)" style="cursor:pointer"`:''}>
       <div style="width:9px;height:9px;border-radius:50%;background:${col};margin-top:5px;flex-shrink:0"></div>
       <div class="vitem-body">
-        <div class="vitem-title">${(function(){ var rr=v.reclamoId?R(v.reclamoId):null; var pp=rr?P(rr.pileta):null; return pp?pp.nombre:v.titulo; })()}</div>
+        <div class="vitem-title">${(function(){ var rr=v.solicitudId?R(v.solicitudId):null; var pp=rr?P(rr.pileta):null; return pp?pp.nombre:v.titulo; })()}</div>
         <div class="vitem-sub">${v.titulo} &bull; ${v.sub}</div>
         <div class="vitem-who">
           ${u ? av(22,u.avClass,u.iniciales) + `<span style="font-size:14px;color:var(--g800);font-weight:500">${u.nombre.split(' ')[0]}</span>` : ''}
@@ -1557,6 +1557,9 @@ function renderVisitasList(list) {
 
 // ── INIT ──
 document.getElementById('bnav').style.display = 'none';
+loadDB();
+
+mentById('bnav').style.display = 'none';
 loadDB();
 
 </script>
